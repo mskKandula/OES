@@ -3,6 +3,7 @@ package controller
 import (
 	"net/http"
 	"github.com/mskKandula/model"
+	"github.com/mskKandula/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,9 +27,16 @@ func Login(c *gin.Context){
 	}
 
 	if userLogin.Password != Users[userLogin.Email]{
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized credentials"})
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			return
 	}
 
-	c.JSON(http.StatusOK,gin.H{"status":"Successfully Logged in"})
+	token,time,err := middleware.Auth(userLogin)
+
+	if err!=nil{
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+	}
+
+	c.JSON(http.StatusOK,gin.H{"token":token,"expirationTime":time})
 }
