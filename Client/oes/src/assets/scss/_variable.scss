@@ -1,0 +1,150 @@
+// colors-variables
+// $xltGradient:linear-gradient(0deg, rgba(255,255,255,1) 0%, rgba(0,161,254,.1) 100%);
+$xltGradient :linear-gradient(0deg, rgba(255, 255, 255, 1) 0%, rgb(247, 247, 247) 100%);
+$priColor: #686DE0;
+$secondaryColor:#36D1DC;
+$contentColor: #2C3E50;
+$lightColor :#999;
+$titleColor: $priColor;
+$darkGrey: #2C3E50;
+$red: #e74c3c;
+$yellow: #f1c40f;
+$green:#2ecc71;
+$orange: #e67e22;
+$purple:#9b59b6;
+$cyan:#0abde3;
+$light-red:#ff6b6b;
+// Fonts
+// $titleFont : 'Poppins';
+$themeFont: 'Open Sans';
+$baseFontSize: 14px;
+
+$themeGradient :linear-gradient(135deg, #00467F 0%, #A5CC82 100%);
+$priColor:#00467F ;
+$secColor: #A5CC82 ;
+// $themeGradient :radial-gradient(circle at 22.4% 21.7%, #0253b9 0%, #04bde4 100.2%);
+// $priColor:#0253b9 ;
+// $secColor: #04bde4;
+// $themeGradient :linear-gradient(90deg, rgb(84, 165, 224) -3.7%, rgba(91, 226, 161, 0.84) 102.9%);
+// $priColor:rgb(84, 165, 224) ;
+// $secColor: rgba(91, 226, 161, 0.84);
+// Theme 1 -  Student Dashboard -------------
+// $themeGradient :linear-gradient(135deg, #686DE0 0%, #36D1DC 100%);
+// $priColor: #686DE0;
+// $secColor: #36D1DC;
+// theme-2- Mentor Theme --------------------
+// $themeGradient :linear-gradient(135deg, #4568DC 0%, #B06AB3 100%);
+// $priColor: #4568DC;
+// $secColor: #B06AB3;
+// theme-3 - IP Theme --------------------- IP theme
+// $themeGradient :linear-gradient(135deg, #A770EF 0%, #FDB99B 100%);
+// $priColor: #A770EF;
+// $secColor: #FDB99B;
+// theme-4 - University --------------------
+// $themeGradient :linear-gradient(135deg, #42b3be 0%, #0bbdb6 100%);
+// $priColor: #42b3be;
+// $secColor: #0bbdb6;
+// theme-5 - admission --------------------
+// $themeGradient :linear-gradient(135deg, #1a2a6c 0%, #b21f1f 100%);
+// $priColor: #1a2a6c;
+// $secColor: #b21f1f;
+// theme-6 - admin --------------------
+// $themeGradient :linear-gradient(135deg, #D66D75 0%, #E29587 100%);
+// $priColor: #D66D75;
+// $secColor: #E29587;
+// theme-7 - Lms --------------------
+// $themeGradient :linear-gradient(135deg, #77A1D3 0%, #79CBCA 100%);
+// $priColor: #77A1D3;
+// $secColor: #79CBCA;
+// theme-8 -  --------------------
+// $themeGradient :linear-gradient(135deg, #ad5389 0%, #3d1153 100%);
+// $priColor: #ad5389;
+// $secColor: #3d1153;
+// theme-9 -  --------------------
+// $themeGradient :linear-gradient(135deg, #0083B0 0%, #00B4DB 100%);
+// $priColor: #0083B0;
+// $secColor: #00B4DB;
+// theme-10 -  --------------------
+// $themeGradient :linear-gradient(135deg, #6A82FB 0%, #FC5C7D 100%);
+// $priColor: #6A82FB;
+// $secColor: #FC5C7D;
+// theme-11 -  --------------------
+// $themeGradient :linear-gradient(135deg, #972767 0%, #ca3d57 100%);
+// $priColor: #972767;
+// $secColor: #ca3d57;
+// theme-12 -  --------------------
+// $themeGradient :linear-gradient(135deg, #3494E6 0%, #EC6EAD 100%);
+// $priColor: #3494E6;
+// $secColor: #EC6EAD;
+// theme-13 -  --------------------
+// $themeGradient :linear-gradient(135deg, #00b09b 0%, #96c93d 100%);
+// $priColor: #00b09b;
+// $secColor: #96c93d;
+// theme-14 -  --------------------
+// $themeGradient :linear-gradient(135deg, #DCE35B 0%, #45B649 100%);
+// $priColor: #45B649;
+// $secColor: #DCE35B;
+// theme-15 -  --------------------
+// $themeGradient :linear-gradient(135deg, #757519 0%, #CCCCB2 100%);
+// $priColor: #757519;
+// $secColor: #CCCCB2;
+// theme-16 -  --------------------
+// $themeGradient :linear-gradient(135deg, #00C9FF 0%, #92FE9D 100%);
+// $priColor: #00C9FF;
+// $secColor: #92FE9D;
+// theme-17 -  --------------------
+// $themeGradient :linear-gradient(135deg, #000046 0%, #1CB5E0 100%);
+// $priColor: #1CB5E0;
+// $secColor: #1CB5E0;
+// theme-18 -  --------------------
+// $themeGradient :linear-gradient(135deg, #2F80ED 0%, #56CCF2 100%);
+// $priColor: #2F80ED;
+// $secColor: #56CCF2;
+// theme-19 -  --------------------
+// $themeGradient :linear-gradient(135deg, #457fca 0%, #5691c8 100%);
+// $priColor: #457fca;
+// $secColor: #5691c8;
+// theme-20 -  --------------------
+// $themeGradient :linear-gradient(135deg, #005C97 0%, #363795 100%);
+// $priColor: #005C97;
+// $secColor: #363795;
+// theme-21 -  --------------------
+// $themeGradient :linear-gradient(135deg, #136a8a 0%, #267871 100%);
+// $priColor: #136a8a;
+// $secColor: #267871;
+// theme-22 -  --------------------
+// $themeGradient :linear-gradient(135deg, #43cea2 0%, #185a9d 100%);
+// $priColor: #43cea2;
+// $secColor: #185a9d;
+// theme-23 -  --------------------
+// $themeGradient :linear-gradient(135deg, #0072ff 0%, #00c6ff 100%);
+// $priColor: #0072ff;
+// $secColor: #00c6ff;
+// theme-24 -  --------------------
+// $themeGradient :linear-gradient(135deg, #8E2DE2 0%, #4A00E0 100%);
+// $priColor: #8E2DE2;
+// $secColor: #4A00E0;
+// theme-25 -  --------------------
+// $themeGradient :linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+// $priColor: #4e54c8;
+// $secColor: #8f94fb;
+// theme-26 -  --------------------
+// $themeGradient :linear-gradient(135deg, #6E48AA 0%, #9D50BB 100%);
+// $priColor: #6E48AA;
+// $secColor: #9D50BB;
+// theme-27 -  --------------------
+// $themeGradient :linear-gradient(135deg, #1488CC 0%, #2B32B2 100%);
+// $priColor: #1488CC;
+// $secColor: #2B32B2;
+// theme-28 -  --------------------
+// $themeGradient :linear-gradient(135deg, #1A2980 0%, #26D0CE 100%);
+// $priColor: #218eaf;
+// $secColor: #26D0CE;
+// theme-29 -  --------------------
+// $themeGradient :linear-gradient(135deg, #7742B2 0%, #F180FF 100%);
+// $priColor: #7742B2;
+// $secColor: #F180FF;
+// theme-30 -  --------------------
+// $themeGradient :linear-gradient(135deg, #4B1248 0%, #F0C27B 100%);
+// $priColor: #d3a372;
+// $secColor:#4B1248;
