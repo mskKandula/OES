@@ -1,5 +1,5 @@
-import Vue from 'vue'
-import VueRouter from 'vue-router'
+import Vue from "vue";
+import VueRouter from "vue-router";
 // import Home from '../views/Home.vue'
 import AppLayout from "@/components/common/AppLayout";
 
@@ -9,15 +9,14 @@ function loadView(view) {
     import(/* webpackChunkName: "view-[request]" */ `@/views/${view}.vue`);
 }
 
-
 const routes = [
   {
     path: "/",
     name: "Login",
     component: loadView("Login"),
     meta: {
-      title: "Login"
-    }
+      title: "Login",
+    },
   },
   {
     // Layout
@@ -26,17 +25,30 @@ const routes = [
     component: AppLayout,
     children: [
       {
-        path: "/about",
-        name: "About",
-        component: loadView("About")
-      }
-    ]
-]
+        path: "/dashboard",
+        name: "Dashboard",
+        component: loadView("dashboard"),
+        meta: {
+          title: "Dashboard",
+        },
+      },
+
+      {
+        path: "/uploadQuestions",
+        name: "UploadQuestions",
+        component: loadView("UploadQuestions"),
+        meta: {
+          title: "UploadQuestions",
+        },
+      },
+    ],
+  },
+];
 
 const router = new VueRouter({
-  mode: 'history',
+  mode: "history",
   base: process.env.BASE_URL,
-  routes
-})
+  routes,
+});
 
-export default router
+export default router;
