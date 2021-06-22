@@ -1,13 +1,20 @@
 package controller
 
 import (
+	"fmt"
 	"net/http"
+	"bytes"
+	"bufio"
+	"strings"
+	"io"
 	"github.com/mskKandula/model"
 	"github.com/mskKandula/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 var Users = make(map[string]string) //temp db
+
+var fileTextLines []string
 
 func SignUp(c *gin.Context){
 	user := model.User{}
@@ -39,4 +46,41 @@ func Login(c *gin.Context){
 	}
 
 	c.JSON(http.StatusOK,gin.H{"token":token,"expirationTime":time})
+}
+
+func Questionhandle(c *gin.Context){
+
+	file,handler, err := c.Request.FormFile("myFile")
+	
+	if err != nil {
+		fmt.Println("Error Retrieving the File")
+		fmt.Println(err)
+		return
+	}
+
+	if strings.Split(handler.Filename, ".")[1] != "txt" {
+		fmt.Println("File Format Not supported")
+		return
+	}
+
+	if handler.Size > 10*1024 {
+		fmt.Println("File size is big")
+		return
+	}
+
+	buf := bytes.NewBuffer(nil)
+    if _,err = io.Copy(buf, file); err != nil {
+    fmt.Println(err)
+	return
+}
+	fileScanner := bufio.NewScanner(buf)
+
+	fileScanner.Split(bufio.ScanLines)
+ 
+	for fileScanner.Scan() {
+		fileTextLines = append(fileTextLines, fileScanner.Text())
+	}
+
+	c.JSON(http.StatusOK,gin.H{"Questions":fileTextLines})
+
 }
