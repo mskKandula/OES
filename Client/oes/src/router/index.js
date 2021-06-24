@@ -32,6 +32,14 @@ const routes = [
           title: "Dashboard",
         },
       },
+      {
+        path: "/fileUpload",
+        name: "File",
+        component: loadView("File"),
+        meta: {
+          title: "File",
+        },
+      },
 
       {
         path: "/uploadQuestions",
