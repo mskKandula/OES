@@ -41,6 +41,14 @@ const routes = [
           title: "UploadQuestions",
         },
       },
+      {
+        path: "/questions",
+        name: "Questions",
+        component: loadView("Questions"),
+        meta: {
+          title: "Questions",
+        },
+      },
     ],
   },
 ];

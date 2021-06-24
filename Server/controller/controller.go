@@ -84,3 +84,7 @@ func Questionhandle(c *gin.Context){
 	c.JSON(http.StatusOK,gin.H{"Questions":fileTextLines})
 
 }
+
+func GetQuestions(w http.ResponseWriter,r *http.Request){
+	c.JSON(http.StatusOK,gin.H{"Questions":fileTextLines})
+}
