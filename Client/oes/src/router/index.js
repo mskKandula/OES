@@ -50,6 +50,14 @@ const routes = [
         },
       },
       {
+        path: "/studentsList",
+        name: "StudentsList",
+        component: loadView("StudentsList"),
+        meta: {
+          title: "StudentsList",
+        },
+      },
+      {
         path: "/questions",
         name: "Questions",
         component: loadView("Questions"),
