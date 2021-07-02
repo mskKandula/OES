@@ -3,8 +3,8 @@ package controller
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strings"
 
@@ -13,9 +13,18 @@ import (
 	"github.com/mskKandula/model"
 )
 
-var Users = make(map[string]string) //temp db
+var (
+	Users = make(map[string]string) //temp db
 
-var fileTextLines []string
+	fileTextLines []string
+
+	requiredKeys = []string{
+		"Name",
+		"Email",
+		"Mobile",
+		"Password",
+	}
+)
 
 func SignUp(c *gin.Context) {
 	user := model.User{}
@@ -49,29 +58,63 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token, "expirationTime": time})
 }
 
+func FileUpload(c *gin.Context) {
+
+	file, handler, err := c.Request.FormFile("myFile")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer file.Close()
+
+	if strings.Split(handler.Filename, ".")[1] != "xlsx" {
+		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
+		return
+	}
+
+	if handler.Size > 10*1024 {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "File size is big"})
+		return
+	}
+
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_ = excel(fileBytes)
+
+}
+func excel(fileBytes []byte) string {
+
+	return "Processing"
+}
+
 func Questionhandle(c *gin.Context) {
 
 	file, handler, err := c.Request.FormFile("myFile")
 
 	if err != nil {
-		fmt.Println("Error Retrieving the File")
-		fmt.Println(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	if strings.Split(handler.Filename, ".")[1] != "txt" {
-		fmt.Println("File Format Not supported")
+		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
 
 	if handler.Size > 10*1024 {
-		fmt.Println("File size is big")
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "File size is big"})
 		return
 	}
 
 	buf := bytes.NewBuffer(nil)
 	if _, err = io.Copy(buf, file); err != nil {
-		fmt.Println(err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	fileScanner := bufio.NewScanner(buf)
@@ -82,12 +125,12 @@ func Questionhandle(c *gin.Context) {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
 
-	c.JSON(http.StatusOK, gin.H{"Questions": fileTextLines})
+	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines})
 
 }
 
 func GetQuestions(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"Questions": fileTextLines})
+	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines})
 }
 
 func GetStudents(c *gin.Context) {
