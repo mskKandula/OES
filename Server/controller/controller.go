@@ -11,6 +11,8 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/mskKandula/middleware"
 	"github.com/mskKandula/model"
+	"github.com/tealeg/xlsx"
+	"github.com/tidwall/gjson"
 )
 
 var (
@@ -85,12 +87,72 @@ func FileUpload(c *gin.Context) {
 		return
 	}
 
-	_ = excel(fileBytes)
+	result, err := excel(fileBytes)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	var students []model.Student
+
+	for _, val := range result {
+
+		name := val.Get("Name").String()
+		email := val.Get("Email").String()
+		mobile := val.Get("Mobile").String()
+		password := val.Get("Password").String()
+
+		students = append(students, model.Student{name, email, mobile, password})
+	}
+	c.JSON(http.StatusOK, gin.H{"students": students})
 
 }
-func excel(fileBytes []byte) string {
 
-	return "Processing"
+func excel(fileBytes []byte) ([]gjson.Result, error) {
+
+	var data []gjson.Result
+
+	xlFile, err := xlsx.OpenBinary(fileBytes)
+
+	if err != nil {
+		return data, err
+	}
+
+	for _, sheet := range xlFile.Sheets {
+		if sheet.MaxRow < 2 {
+			continue
+		}
+
+		for rowIndex := 1; rowIndex < sheet.MaxRow; rowIndex++ {
+
+			row, _ := sheet.Row(rowIndex)
+
+			allKeys := []string{}
+
+			for _, v := range requiredKeys {
+				allKeys = append(allKeys, v)
+			}
+
+			values := []interface{}{}
+
+			for i := 0; i < len(allKeys); i++ {
+
+				values = append(values, strings.TrimSpace(row.GetCell(i).String()))
+
+			}
+
+			arr := prepareResult(allKeys, values)
+
+			data = append(data, arr)
+		}
+	}
+	return data, nil
+}
+
+func prepareResult(keys []string, vals []interface{}) gjson.Result {
+	var data string
+	return gjson.Parse(data)
 }
 
 func Questionhandle(c *gin.Context) {
