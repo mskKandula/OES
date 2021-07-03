@@ -13,6 +13,7 @@ import (
 	"github.com/mskKandula/model"
 	"github.com/tealeg/xlsx"
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 var (
@@ -152,6 +153,11 @@ func excel(fileBytes []byte) ([]gjson.Result, error) {
 
 func prepareResult(keys []string, vals []interface{}) gjson.Result {
 	var data string
+
+	for i, k := range keys {
+		data, _ = sjson.Set(data, k, vals[i])
+	}
+
 	return gjson.Parse(data)
 }
 
