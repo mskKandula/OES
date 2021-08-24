@@ -1,0 +1,88 @@
+show databases;
+
+select database();
+
+create database OES;
+
+use OES;
+
+CREATE TABLE Users(  
+    id int NOT NULL AUTO_INCREMENT,  
+    name varchar(45) NOT NULL,
+    age int,
+    email varchar(45) NOT NULL,
+    mobileNo varchar(45) NOT NULL,
+    password varchar(100) NOT NULL,
+    PRIMARY KEY (id)  
+); 
+
+select * from Users;
+
+SET SQL_SAFE_UPDATES = 0;
+
+UPDATE examiner SET password = '121' WHERE age = 25;
+
+CREATE TABLE Students (  
+    id int NOT NULL AUTO_INCREMENT,  
+    name varchar(45) NOT NULL,
+    email varchar(45) NOT NULL UNIQUE,
+    mobileNo varchar(45) NOT NULL UNIQUE,
+    password varchar(45) NOT NULL,
+    PRIMARY KEY (id)  
+); 
+
+select * from Students;
+
+CREATE TABLE Menu (  
+    id int NOT NULL AUTO_INCREMENT,  
+    name varchar(45) NOT NULL,
+    url varchar(45) NOT NULL,
+    description varchar(45) NOT NULL,
+    PRIMARY KEY (id)  
+); 
+
+INSERT INTO Menu(name,url,description) VALUES
+('Dashboad','/dashboard','Dashboard'),
+('MultipleStudentsRegistration','/multipleStudentsRegistration','MultipleStudentsRegistration'),
+('StudentsList','/studentsList','StudentsList');
+
+INSERT INTO Menu(name,url,description) VALUES
+('Uploadquestions','/uploadQuestions','Uploadquestions'),
+('Exam','onlineExam','Exam');
+
+update Menu set url='/onlineExam' where name = 'Exam';
+
+select * from Menu;
+
+CREATE TABLE Role (  
+    id int NOT NULL AUTO_INCREMENT,  
+    name varchar(45) NOT NULL,
+    PRIMARY KEY (id)  
+);  
+
+INSERT INTO Role(name) VALUES('Examiner'),('Student');
+
+select * from Role;
+
+CREATE TABLE UserRole (  
+    userId int NOT NULL,  
+    roleId int NOT NULL
+);
+
+INSERT INTO UserRole(userId,roleId) VALUES(1,1),(2,2);
+
+select * from userRole;
+
+CREATE TABLE RoleMenu (  
+    roleId int NOT NULL,  
+    menuId int NOT NULL
+);
+
+INSERT INTO roleMenu(roleId,menuId) VALUES(2,5);
+
+
+select * from Menu where id in(
+		select menuId from RoleMenu where roleId =(
+		select roleId from UserRole where userId=2));
+
+show tables;
