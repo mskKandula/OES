@@ -19,3 +19,10 @@ type Student struct {
 	Mobile   string `json:"mobile,omitempty"`
 	Password string `json:"password"`
 }
+
+type Route struct {
+	Id          int    `json:"id"`
+	Name        string `json:"name"`
+	Url         string `json:"url"`
+	Description string `json:"description"`
+}

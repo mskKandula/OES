@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mskKandula/middleware"
@@ -114,7 +115,7 @@ func Login(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": tokenString, "expirationTime": expiriesIn})
 }
 
-func FileUpload(c *gin.Context) {
+func StudentsRegisterHandler(c *gin.Context) {
 
 	file, handler, err := c.Request.FormFile("myFile")
 
@@ -229,7 +230,7 @@ func prepareResult(keys []string, vals []interface{}) gjson.Result {
 	return gjson.Parse(data)
 }
 
-func Questionhandle(c *gin.Context) {
+func QuestionsUploadHandler(c *gin.Context) {
 
 	file, handler, err := c.Request.FormFile("myFile")
 
@@ -281,4 +282,72 @@ func Logout(c *gin.Context) {
 		MaxAge: -1,
 	})
 
+}
+
+func GetAllRoutes(c *gin.Context) {
+
+	cookie, err := c.Request.Cookie("token")
+
+	if err != nil {
+		if err == http.ErrNoCookie {
+			// If the cookie is not set, return an unauthorized status
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+		// For any other type of error, return a bad request status
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+		return
+	}
+
+	// Get the JWT string from the cookie
+	tokenString := cookie.Value
+
+	email, err := middleware.Decode(tokenString)
+
+	if err != nil {
+		if err == jwt.ErrSignatureInvalid {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	var routes []model.Route
+	var val int
+
+	// rows, err := Db.Query(`select * from menu where id in(
+	// 	select menuId from roleMenu where roleId =(
+	// 	select roleId from userRole where userId=(
+	// 	select id from examiner where email=?
+	// 	)))`, email)
+
+	if email != "admin@example.org" {
+		val = 2
+	} else {
+		val = 1
+	}
+
+	rows, err := Db.Query(`select * from menu where id in(
+		select menuId from roleMenu where roleId =(
+		select roleId from userRole where userId=?))`, val)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer rows.Close()
+
+	for rows.Next() {
+		var route model.Route
+
+		if err := rows.Scan(&route.Id, &route.Name, &route.Url, &route.Description); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		routes = append(routes, route)
+	}
+	c.JSON(http.StatusOK, gin.H{"routes": routes})
 }

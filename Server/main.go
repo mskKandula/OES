@@ -1,18 +1,20 @@
 package main
 
-import(
+import (
 	"fmt"
-	"os"
 	"io"
-	"github.com/mskKandula/controller"
+	"log"
+	"os"
+
 	"github.com/gin-gonic/gin"
+	"github.com/mskKandula/controller"
 )
 
 func init() {
-	controller.Db, err := sql.Open("mysql", "userName:password@tcp(address:port)/oes")
+	controller.Db, err := sql.Open("mysql", "userName:password@tcp(address:port)/OES")
 
 	if err != nil {
-		log.Println("Connection Failed to Open")
+		log.Fatalf("Connection Failed to Open: %v",err.Error())
 	}
 
 }
@@ -33,8 +35,9 @@ func main(){
 	r := gin.Default()
 	r.POST("/signUp",controller.SignUp)
 	r.POST("/login",controller.Login)
-	r.POST("/uploadFile", controller.FileUpload)
-	r.POST("/uploadQuestionFile", controller.Questionhandle)
+	r.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
+	r.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
+	r.GET("/getRoutes", controller.GetAllRoutes)
 	r.GET("/getQuestions",controller.GetQuestions)
 	r.GET("/getStudents", controller.GetStudents)
 	r.GET("/logOut", controller.Logout)
