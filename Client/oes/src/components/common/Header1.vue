@@ -154,14 +154,11 @@ export default {
       console.log("getallroutes");
       let self = this;
       this.token = self.$cookies.get("token");
-      console.log("156 cookie", this.token);
       axios
         .get("/getRoutes")
         .then(function(res) {
-          console.log("155", res.data);
           if (res.data) {
             self.routes = res.data;
-            console.log("158", self.routes);
           }
         })
         .catch(function() {
@@ -177,7 +174,7 @@ export default {
       axios
         .post("/logout", {})
         .then(function(res) {
-          console.log("35", res.data);
+          console.log(res)
           self.$router.push("/");
         })
         .catch(function() {
@@ -205,8 +202,8 @@ export default {
 </script>
 
 <style lang="scss">
-// @import "public/assets/css/variable.scss";
-// @import "public/assets/css/mixin.scss";
+@import "../../assets/scss/variable.scss";
+@import "../../assets/scss/mixin.scss";
 #page-header {
   .top-header {
     .logo-img {

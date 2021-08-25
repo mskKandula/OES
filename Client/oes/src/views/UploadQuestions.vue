@@ -40,15 +40,13 @@ export default {
         url: "https://httpbin.org/post",
         thumbnailWidth: 150,
         maxFilesize: 0.01,
-         maxFiles: 1,
+        maxFiles: 1,
         //  acceptedFiles: ".xls,.xlsx",
         headers: { "My-Awesome-Header": "header value" },
       },
-      
     };
   },
   methods: {
-   
     submitFile(file) {
       let self = this;
       let formData = new FormData();
@@ -61,42 +59,42 @@ export default {
           Make the request to the POST /single-file URL
         */
       axios
-        .post("/questionFile", formData, {
+        .post("/uploadQuestionFile", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
         })
-        .then(function(res) {
-           self.$refs.myVueDropzone.removeFile(file);
-           if(res.data){
-            self.$bvToast.toast(`Imported Successfully`, {
-          title: 'Success',
-           variant: 'success',
-          autoHideDelay: 5000,
-         solid: true,
-        class: "toast"
-        })
-          console.log("74",res.data);
-           }else{
-             self.$refs.myVueDropzone.removeFile(file);
-           self.$bvToast.toast(`File is too big to parse`, {
-          title: 'Failed',
-           variant: 'danger',
-          autoHideDelay: 5000,
-         solid: true,
-        class: "toast"
-        })
-           }
-        })
-        .catch(function() {
+        .then(function (res) {
           self.$refs.myVueDropzone.removeFile(file);
-           self.$bvToast.toast(`Please Upload Proper File`, {
-          title: 'Failed',
-           variant: 'danger',
-          autoHideDelay: 5000,
-         solid: true,
-        class: "toast"
+          if (res.data) {
+            self.$bvToast.toast(`Imported Successfully`, {
+              title: "Success",
+              variant: "success",
+              autoHideDelay: 5000,
+              solid: true,
+              class: "toast",
+            });
+            console.log("74", res.data);
+          } else {
+            self.$refs.myVueDropzone.removeFile(file);
+            self.$bvToast.toast(`File is too big to parse`, {
+              title: "Failed",
+              variant: "danger",
+              autoHideDelay: 5000,
+              solid: true,
+              class: "toast",
+            });
+          }
         })
+        .catch(function () {
+          self.$refs.myVueDropzone.removeFile(file);
+          self.$bvToast.toast(`Please Upload Proper File`, {
+            title: "Failed",
+            variant: "danger",
+            autoHideDelay: 5000,
+            solid: true,
+            class: "toast",
+          });
           console.log("FAILURE!!");
         });
     },

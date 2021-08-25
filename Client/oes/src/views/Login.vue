@@ -15,9 +15,7 @@
                       alt
                     />
                   </div>
-                  <div class="slider-content">
-                    Learning Management System
-                  </div>
+                  <div class="slider-content">Learning Management System</div>
                 </swiper-slide>
               </swiper>
               <div class="swiper-control">
@@ -275,7 +273,7 @@
     <b-modal
       id="termsCondition"
       ok-only
-      title="Terms and Condition for Industry Partner(IP)"
+      title="Terms and Condition for User Registration"
       size="lg"
       modal-class="custom-modal"
       ok-variant="theme btn-rounded"
@@ -283,10 +281,10 @@
       footer-class="border-0"
     >
       <p>
-        The interested Companies in collaborating with MKCL for this Work-based
-        Learning initiative in skilling the youth of the Nation for making them
-        employable are registered under IP agreement for Work-based Degree
-        Program–BBA(SM) in collaboration with IGNOU & MKCL.
+        Lorem ipsum dolor sit, amet consectetur adipisicing elit. Eius nam
+        provident totam adipisci! Temporibus mollitia odio, dolore reiciendis
+        similique obcaecati commodi molestias eum dolor voluptas harum alias
+        fugit velit animi.
       </p>
       <h6>[A] RESPONSIBILITIES</h6>
       <ol class="list-style-no list-style-decimal">
@@ -294,30 +292,27 @@
           <b>Selection and Admission</b>
           <ol class="list-style-decimal">
             <li>
-              Convey to MKCL the requirement of number and suitable profile of
-              Students/Interns who can perform at the workplace preferably in
-              October/November or March/April every year along with their
-              eligibility and objective selection criteria, terms and conditions
-              of scholarship to be accepted by the selected candidate, a
-              template of the letter including amount of monthly scholarship
-              (offer letter), location of workplace, working hours, working
-              days, and other facilities, etc.;
+              Lorem ipsum, dolor sit amet consectetur adipisicing elit. Numquam
+              aliquam ad pariatur quod quos quas omnis, error magni labore, nam
+              et eaque cumque ea iusto porro eligendi recusandae vero impedit.
             </li>
             <li>
-              Convey to MKCL if any in-service employees working in your company
-              are applying for this degree program. Roles and responsibilities
-              of IP will be same towards in-service employees.
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Aliquam
+              deleniti esse voluptatibus velit facere, a architecto tenetur
+              magni dolor cum iure provident deserunt assumenda. Et pariatur non
+              consequuntur dolore minus.
             </li>
             <li>
-              Participate, as per the schedule stipulated by MKCL, in the
-              selection process;
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Dolorem
+              illum nostrum dolore distinctio, aspernatur eaque accusamus.
+              Molestiae sapiente facere, eaque, soluta, nobis culpa sunt iure a
+              architecto labore est quod.
             </li>
             <li>
-              Make a formal offer of scholarship (for a period of three years)
-              to the selected Students/Interns in form of a formal internship
-              letter or any other form of the letter by specifically mentioning
-              the conditions for the scholarship and seek their acceptance and
-              complete their joining formalities at the specified Workplace.
+              Lorem ipsum, dolor sit amet consectetur adipisicing elit. Odit et
+              explicabo eveniet distinctio, amet numquam pariatur adipisci nisi
+              atque repellat nam dolorem? Explicabo eos voluptates itaque magni
+              eum nulla impedit.
             </li>
           </ol>
         </li>
@@ -326,68 +321,52 @@
           <b>Work Environment:</b>
           <ol class="list-style-decimal">
             <li>
-              Ensure availability of the real workplace as a
-              working–cum-learning environment for Students/Interns equipped
-              with requisite infrastructure, internet bandwidth and
-              telecommunication and computing facilities and other necessary
-              equipment, etc.,
+              Lorem, ipsum dolor sit amet consectetur adipisicing elit.
+              Dignissimos eveniet recusandae nobis architecto quam vitae
+              molestias voluptates voluptatum enim, perferendis pariatur fugit
+              velit similique. Odio soluta corporis alias? Repellendus, ducimus!
             </li>
 
             <li>
-              Ensure that the Students/Interns are being meaningfully engaged in
-              the daily work and functions (real-life work) related to the
-              service industry viz. facilitation, administration, operations,
-              management for the number of hours of work as per the organization
-              policy (schedules/hours of practical);
+              Lorem, ipsum dolor sit amet consectetur adipisicing elit. Itaque
+              at odio quasi exercitationem ab dicta doloribus assumenda
+              cupiditate voluptas nisi dolorem totam enim, animi rerum nam
+              pariatur impedit beatae perferendis!
             </li>
 
             <li>
-              Undertake the induction training and orientation of the
-              Students/Interns;
+              Lorem ipsum dolor sit amet consectetur, adipisicing elit. At optio
+              deleniti fugiat sint dolore, ullam unde quibusdam autem nemo ab
+              voluptates accusamus commodi repellendus quidem dignissimos
+              tempore, assumenda recusandae beatae.
             </li>
 
             <li>
-              Stipulate and share with MKCL and the Students/Interns the
-              performance appraisal system for assessing Students/Interns’
-              performance at the workplace, for the award of Work Ratings to be
-              forwarded to the University on monthly basis;
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. At, qui
+              sint modi similique vero ab laboriosam quibusdam nisi aliquam
+              autem voluptatum soluta a esse necessitatibus quasi impedit maxime
+              atque! Odit!
             </li>
 
             <li>
-              Ensure that the Appraisers assess the performance of the
-              Students/Interns as per industry norms and IP/WP’s performance
-              appraisal system and orient them to award Work Ratings to the
-              Students/Interns based on the performance.
+              Lorem ipsum dolor, sit amet consectetur adipisicing elit. Ut
+              ratione perspiciatis non saepe quas consectetur repellat maxime
+              officia veniam! Ipsa ducimus saepe consequuntur nihil
+              necessitatibus pariatur perferendis illum mollitia perspiciatis.
             </li>
 
             <li>
-              Establish periodic job rotation mechanism internally to ensure
-              role progression at the workplace and advanced career growth for
-              the Students/Interns, to the extent to which it is possible.
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Soluta
+              quasi possimus ullam quia animi quisquam maiores recusandae in
+              amet consequuntur eum expedita optio exercitationem temporibus
+              eius minima, minus, quidem corporis.
             </li>
 
             <li>
-              In case of repeated incidences of
-              non-performance/under-performance supported by objective
-              evidences, a letter of improvement may be given to the concerned
-              Student/Intern. Incase expected improvement in performance is not
-              observed inspite of repeated feed for improvement, then the same
-              can be reflected in the ratings along with specific observations.
-            </li>
-
-            <li>
-              In case the organization has a written code of conduct and other
-              applicable policies, which the Students/Interns have to comply
-              with, a copy of the same be made available to them and an
-              awareness and orientation session regarding the same be conducted.
-            </li>
-
-            <li>
-              If the Student/Intern is found to be absconding and/or absent at
-              the workplace in breach of applicable organization policies, rules
-              and regulation for any reasons whatsoever, you shall intimate MKCL
-              about the same within 2 working days to enable to take further
-              appropriate action.
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptas
+              doloremque nostrum est at sint veniam alias, quod necessitatibus
+              rem et, accusamus quam, eaque dolor! Fuga aspernatur illum
+              eligendi laudantium magnam.
             </li>
           </ol>
         </li>
@@ -395,9 +374,10 @@
           <b>Learning Environment</b>
           <ol class="list-style-decimal">
             <li>
-              Nominate Mentors, if possible, in the ratio 1:16 (Mentor:
-              Students/Interns) at the workplace and seek their commitment for
-              mentorship. Mentors will perform following responsibilities:
+              Lorem ipsum dolor, sit amet consectetur adipisicing elit. Mollitia
+              maiores impedit dignissimos, quo, adipisci velit voluptatum qui
+              vero aliquam alias ea libero fugiat, nihil perferendis. Ut
+              architecto aliquid dolores excepturi.
               <ol class="list-style-no" type="a">
                 <li>
                   Conduct meaningful interactions, discussion sessions with
@@ -414,29 +394,6 @@
                   ethical professional life but also follows core values in
                   her//his personal life;
                 </li>
-                <li>
-                  Sensitize the Student/Intern about various environmental,
-                  social and economic concerns, challenges and the positive role
-                  s/he can play even as an individual for making the planet a
-                  better place;
-                </li>
-                <li>
-                  Assess performance, offer corrective and objective feedback to
-                  Student/Intern and consolidate Work Ratings;
-                </li>
-                <li>
-                  Use ePlatform effectively to collaborate with
-                  Students/Interns, and facilitate them to build their
-                  portfolios.
-                </li>
-                <li>
-                  To attend meetings convened by MKCL based on mutual
-                  convenience.
-                </li>
-                <li>
-                  Share student performance (work ratings) with the project
-                  coordinator on a monthly basis.
-                </li>
               </ol>
             </li>
           </ol>
@@ -445,11 +402,10 @@
           <b>Monthly scholarship/stipend</b>
           <ol class="list-style-decimal">
             <li>
-              The Industry Partner/Workplace Partner shall, in consultation with
-              MKCL, stipulate per Student/Intern per month scholarship and other
-              facilities to be provided to the Student/Intern for three years of
-              the Work-based Degree program and pay the scholarship on a monthly
-              basis.
+              Lorem ipsum dolor, sit amet consectetur adipisicing elit. Nisi
+              perspiciatis inventore aspernatur eos voluptatum ullam, saepe,
+              adipisci ratione quibusdam rerum cum. Ipsum dolorem tempore
+              aperiam impedit alias reiciendis in optio.
             </li>
 
             <li>
@@ -462,33 +418,22 @@
           <b>Project Coordinator at IP location</b>
           <ol class="list-style-decimal">
             <li>
-              IP/WP shall nominate with adequate authority and accountability a
-              coordinator who will act as a single point of contact (SPOC) with
-              MKCL for successful implementation of Work-based Degree Program
-              and perform the following responsibilities. It shall also nominate
-              an alternative person to the said officer who shall be equally
-              responsible in the absence of the first nominated officer
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Impedit
+              beatae neque aperiam nihil consectetur ab unde id iste corporis,
+              cupiditate similique reiciendis facere maiores dolorum at quos,
+              sit maxime velit.
               <ol class="list-style-no" type="a">
                 <li>
-                  coordination with MKCL for implementing the program at
-                  respective IP/WP and setting up eLearning environment and
-                  ensuring access,
+                  Lorem ipsum dolor sit amet consectetur adipisicing elit.
+                  Repellat hic placeat corrupti quos beatae ab veniam aliquid
+                  accusantium soluta illum, tempora officiis facilis corporis
+                  itaque ad laudantium. Architecto, officiis voluptatem.
                 </li>
-
                 <li>
-                  Ensuring consolidation of monthly Work Ratings and submission
-                  to MKCL,
-                </li>
-
-                <li>
-                  Addressing Student/Intern grievances if any and referring
-                  student feedback / grievance if any related to the program to
-                  MKCL,
-                </li>
-
-                <li>
-                  Coordination for organizing quarterly meetings with
-                  appraisers, mentors to be conducted by MKCL
+                  Lorem ipsum dolor sit amet consectetur adipisicing elit. Ipsum
+                  asperiores quibusdam recusandae officiis libero maxime totam
+                  eius similique? Sequi tempore porro mollitia, earum officiis
+                  provident! Atque qui temporibus pariatur dolorum!
                 </li>
               </ol>
             </li>
@@ -498,85 +443,67 @@
       <h6>[B] VALIDITY AND TERMINATION</h6>
       <ol class="list-style-no list-style-decimal">
         <li>
-          The empanelment shall be effective from day of signing the empanelment
-          letter and shall be valid unless terminated as below -
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Consectetur
+          officiis odit libero nihil eos eveniet nulla eaque earum neque
+          doloremque dolores tempora laudantium architecto expedita labore
+          deleniti consequatur, aliquid recusandae.
           <ol type="a">
             <li>
-              by either party by giving the other party a notice in writing of
-              three months of its intention to do so, but without dishonoring
-              any commitment entered into prior to the date of termination
-              notice and no party shall leave its commitment unfinished which
-              may result in tangible losses to the Students/Interns, and/or the
-              other party; or
+              Lorem ipsum dolor sit amet consectetur adipisicing elit.
+              Consequuntur, enim quia, vitae adipisci optio impedit temporibus
+              provident suscipit facere cupiditate at voluptas minima maiores
+              magnam, explicabo sapiente dolorem repudiandae vero.
             </li>
 
             <li>
-              for any reasons such as legal processes, acts of the State or
-              similar such exigencies beyond the normal control of the party
-              concerned and which disable any of the parties hereto from
-              functioning further; or
+              Lorem ipsum dolor sit amet consectetur adipisicing elit. Pariatur
+              temporibus voluptatum eaque ipsam a facere quam eum vitae sunt?
+              Ducimus corrupti id maxime nostrum eos soluta inventore debitis
+              eveniet temporibus!
             </li>
 
             <li>by both parties by mutual consent.</li>
           </ol>
         </li>
         <li>
-          Notwithstanding anything stated above, incase of notice of termination
-          by the IP, the Students/Interns of ongoing Batch/es with the IP shall
-          continue till the completion of their 3 year BBA(SM) and the IP shall,
-          during such period discharge all the responsibilities diligently.
-          Incase, the IP is not able to continue for any force majeure
-          conditions, then both the IP and MKCL shall make utmost efforts to
-          ensure the continuity of the education of the Students/Interns with
-          alternative options.
+          Lorem ipsum, dolor sit amet consectetur adipisicing elit. Minus, velit
+          illum, maiores voluptatibus modi beatae magni optio fugit impedit,
+          officia nostrum esse eum ipsam sit? Voluptatem autem tempore deleniti
+          omnis.
         </li>
         <li>
-          The clauses of this collaboration, which by nature are intended to
-          survive termination shall remain in effect after such termination.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Harum
+          incidunt reiciendis eveniet ex molestiae hic aliquam quibusdam
+          nesciunt suscipit, exercitationem assumenda reprehenderit rerum
+          voluptatem, cumque, sed atque? Sapiente, vitae! Id.
         </li>
       </ol>
       <h6>[C] INTELLECTUAL PROPERTY RIGHTS</h6>
       <ol class="list-style-no">
         <li>
-          ntellectual Property in the context of this agreement shall refer to
-          all such patents, trademarks, copyrights in respect of any hardware,
-          software, product documentation, design document, or any other
-          document, whether in printed or in electronic, digital or any other
-          format which is an integral part of the hardware/software or is
-          supplied along with such products which forms the subject matter of
-          this agreement and shall also include study material, course material,
-          educational and promotional content whether in printed or in
-          electronic, digital or any other format and all business data
-          generated during the period of validity of this Agreement.
+          Lorem ipsum dolor sit amet consectetur, adipisicing elit. Nulla
+          voluptatibus ex, et nemo eum asperiores officia culpa assumenda earum
+          ipsa? Neque quae natus sapiente atque dolore aut, nobis id deleniti.
         </li>
         <li>
-          All the intellectual property rights, to and in the course name,
-          content, methodology, assignments, question banks, etc. are the
-          exclusive intellectual property of party that developed it and any
-          third party components licensed by it shall remain the property of
-          that third party. The data regarding the students applied for the
-          course/s shall be the property of IGNOU and MKCL shall have right to
-          access thereto only to the extent of and for performing its
-          responsibilities thereunder.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Totam magnam
+          aliquam eveniet voluptates nulla quis modi ad adipisci fugiat rerum,
+          laborum sit praesentium voluptas, impedit repellat vero, architecto
+          veritatis quaerat!
         </li>
         <li>
-          The software frameworks for the delivery of the program are developed
-          by Maharashtra Knowledge Corporation Ltd. As such, the software code,
-          whether compiled or un-compiled, in printed or electronic format, with
-          software design logic, graphical user interfaces (GUI) and their
-          design, look and feel, are explicit Intellectual Property of
-          Maharashtra Knowledge Corporation Ltd. only. Any third-party
-          components licensed by it, if any, shall remain the property of those
-          respective third-parties.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Consequatur,
+          excepturi autem? Accusamus aut consequuntur excepturi debitis. Totam,
+          iure. Ducimus eius dolor tenetur aliquam tempora culpa ratione
+          incidunt, accusamus optio. Pariatur?
         </li>
       </ol>
       <h6>[D] NON-DISCLOSURE</h6>
       <ol class="list-style-no">
         <li>
-          Both the parties undertake to each other to keep confidential all
-          information (written or oral) concerning the business and affairs of
-          the other, which has been obtained or received during the course of
-          performance hereunder, save that which is :
+          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Impedit eius
+          officiis qui dolorem et necessitatibus ea fugiat alias ex sed nulla,
+          ipsum sapiente ab facilis voluptatum deleniti iure suscipit unde?
           <ol class="list-style-no" type="a">
             <li>Inconsequential or obvious;</li>
             <li>
@@ -590,40 +517,31 @@
           </ol>
         </li>
         <li>
-          In the event of any of the parties becoming legally compelled to
-          disclose any confidential information, such party shall give
-          sufficient notice to the other party so as to enable the other party
-          to seek a timely protective order or any other appropriate relief. If
-          such an order or other relief cannot be obtained, the party being
-          required to make such a disclosure shall make the disclosure of the
-          Confidential Information only to the extent that is legally required
-          of it and no further.
+          Lorem ipsum dolor sit amet, consectetur adipisicing elit. Accusamus,
+          obcaecati. Voluptatum, possimus nostrum aliquam corrupti error sequi
+          fugit dolorum laborum nam vitae, ab quasi ipsam minus omnis nihil!
+          Laboriosam, sed?
         </li>
       </ol>
       <h6>[E] OTHERS</h6>
       <ol class="list-style-no">
         <li>
-          All disputes and differences, whatsoever arising out of this
-          collaboration shall be first attempted to be settled mutually
-          amicably, otherwise referred to the courts at Pune which shall be the
-          courts having jurisdiction to entertain and try the same.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Nobis
+          repellendus incidunt, nisi id maiores magni non libero consectetur
+          velit delectus laboriosam aspernatur consequatur blanditiis quisquam
+          dignissimos ipsa eaque veniam quod!
         </li>
         <li>
-          MKCL, is implementing Work-based Degree program in collaboration with
-          Indira Gandhi National Open University. As such, Work-based Degree
-          program is implemented in compliance of applicable University Grants
-          Commission (UGC) Regulations and other applicable statutes.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Voluptatem
+          earum quia quasi suscipit error facere corrupti quisquam veniam animi
+          quo ullam ratione inventore aut ad, culpa consectetur cupiditate
+          explicabo minus?
         </li>
         <li>
-          Each person signing this Letter of Empanelment represents and warrants
-          that s/he is duly authorized and has legal capacity to enter into this
-          collaboration. Each party represents and warrants to the other that
-          the execution and delivery of this Letter of Empanelment and the
-          performance of such party’s obligations hereunder have been duly
-          authorized by all necessary corporate or other appropriate actions to
-          execute this and that the terms and conditions of this empanelment are
-          valid and binding on each party and enforceable in accordance with its
-          terms.
+          Lorem ipsum dolor sit amet consectetur adipisicing elit. Eum, voluptas
+          est. Corporis quo earum ratione neque fugit exercitationem sequi
+          possimus voluptatum explicabo asperiores vel rerum, ipsam doloremque
+          suscipit aspernatur sed?
         </li>
       </ol>
       <p>
@@ -678,8 +596,8 @@ export default {
     register() {
       let self = this;
       axios
-        .post("/signup", self.details)
-        .then(function(res) {
+        .post("/signUp", self.details)
+        .then(function (res) {
           self.$bvToast.toast(`Registered successfully`, {
             title: "Success",
             variant: "success",
@@ -689,7 +607,7 @@ export default {
           });
           console.log("93", res.data);
         })
-        .catch(function() {
+        .catch(function () {
           console.log("FAILURE!!");
         });
     },
@@ -701,16 +619,16 @@ export default {
             "Content-Type": "text/plain",
           },
         })
-        .then(function(res) {
+        .then(function (res) {
           console.log("58", res.config.data);
           if (res.config.data) {
             self.$router.push("/dashboard");
           }
         })
-        .catch(function() {
+        .catch(function () {
           self.$bvToast.toast(`Please Enter Valid Credentials`, {
             title: "Not Valid",
-             variant: 'danger',
+            variant: "danger",
             autoHideDelay: 5000,
             solid: true,
             class: "toast",
@@ -817,8 +735,8 @@ export default {
 </script>
 
 <style lang="scss">
-// @import "public/assets/css/variable.scss";
-// @import "public/assets/css/mixin.scss";
+@import "../assets/scss/variable.scss";
+@import "../assets/scss/mixin.scss";
 #login {
   overflow: hidden;
   position: relative;

@@ -41,7 +41,8 @@ export default {
 };
 </script>
 <style lang="scss">
-// @import "public/assets/css/variable.scss";
+@import "../../assets/scss/variable.scss";
+@import "../../assets/scss/mixin.scss";
 .footer {
   padding: 30px 40px;
   text-align: center;

@@ -27,17 +27,17 @@ const routes = [
       {
         path: "/dashboard",
         name: "Dashboard",
-        component: loadView("dashboard"),
+        component: loadView("Dashboard"),
         meta: {
           title: "Dashboard",
         },
       },
       {
-        path: "/fileUpload",
-        name: "File",
-        component: loadView("File"),
+        path: "/multipleStudentsRegistration",
+        name: "MultipleStudentsRegistration",
+        component: loadView("MultipleStudentsRegistration"),
         meta: {
-          title: "File",
+          title: "MultipleStudentsRegistration",
         },
       },
 
@@ -58,11 +58,19 @@ const routes = [
         },
       },
       {
-        path: "/questions",
-        name: "Questions",
-        component: loadView("Questions"),
+        path: "/onlineExam",
+        name: "Exam",
+        component: loadView("Exam"),
         meta: {
-          title: "Questions",
+          title: "Exam",
+        },
+      },
+      {
+        path: "/wordCounter",
+        name: "WordCounter",
+        component: loadView("WordCounter"),
+        meta: {
+          title: "WordCounter",
         },
       },
     ],

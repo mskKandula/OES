@@ -1,7 +1,7 @@
 <template>
   <div class="main-content">
 
-<h2>Candidate List</h2>
+<h2>Students List</h2>
 
 <table>
   <tr>
@@ -10,12 +10,12 @@
     <th>Email</th>
     <th>Mobile</th>
   </tr>
-  <tr v-for="(candidate,index) in this.candidateList"
+  <tr v-for="(student,index) in this.studentsList"
   :key="index">
     <td>{{index +1 }}</td>
-    <td>{{candidate.name}}</td>
-    <td>{{candidate.email}}</td>
-    <td>{{candidate.mobile}}</td>
+    <td>{{student.name}}</td>
+    <td>{{student.email}}</td>
+    <td>{{student.mobile}}</td>
   </tr>
 </table>
   </div>
@@ -25,14 +25,7 @@ import axios from "axios";
 export default {
   data() {
     return {
-      candidateList: [
-    //    {
-    //        id : 1,
-    //        name: "Mohana Kandula",
-    //        email:"mskKandula@gmail.com",
-    //        mobile:"9553563699"
-    //    }
-      ]
+      studentsList: []
     };
   },
   methods:{
@@ -40,10 +33,8 @@ export default {
        axios
         .get("/getStudents")
         .then(function(res) {
-          console.log("155", res.data);
           if (res.data) {
-            self.candidateList = res.data;
-            console.log("158", self.candidateList);
+            self.studentsList = res.data;
           }
         })
         .catch(function() {
@@ -52,7 +43,7 @@ export default {
      }
      },
      created(){
-        this.candidateList = this.$route.params.CandidateList
+        this.studentsList = this.$route.params.studentsList
      }
 //  mounted() {
 //      this.getstudents();
