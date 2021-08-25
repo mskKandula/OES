@@ -1,0 +1,7 @@
+In command line 
+go env
+
+set GOOS=js
+set GOARCH=wasm
+
+go build -o  countMatching.wasm
