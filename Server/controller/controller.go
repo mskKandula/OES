@@ -25,6 +25,7 @@ var (
 	Db            *sql.DB
 	err           error
 	fileTextLines []string
+	students      []model.Student
 
 	requiredKeys = []string{
 		"Name",
@@ -52,11 +53,29 @@ func SignUp(c *gin.Context) {
 	hashedPassword := string(hash)
 
 	query, err := Db.Prepare("INSERT INTO Users(name, age, email, mobileNo, password) VALUES(?,?,?,?,?)")
+
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-	query.Exec(user.Name, user.Age, user.Email, user.MobileNo, hashedPassword)
+
+	result, err := query.Exec(user.Name, user.Age, user.Email, user.MobileNo, hashedPassword)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	lId, _ := result.LastInsertId()
+
+	query, err = Db.Prepare("INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	query.Exec(lId, 1)
 
 	c.JSON(http.StatusOK, gin.H{"status": "Successfully signed up"})
 }
@@ -65,7 +84,10 @@ func Login(c *gin.Context) {
 
 	userLogin := model.UserLogin{}
 
-	var password string
+	var (
+		id       int
+		password string
+	)
 
 	if err := c.ShouldBindJSON(&userLogin); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -76,15 +98,15 @@ func Login(c *gin.Context) {
 	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 	// 	return
 	// }
-	row := Db.QueryRow("select password from Users where email=?", userLogin.Email)
+	row := Db.QueryRow("select id,password from Users where email=?", userLogin.Email)
 
-	err = row.Scan(&password)
+	err = row.Scan(&id, &password)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			row := Db.QueryRow("select password from Students where email=?", userLogin.Email)
+			row := Db.QueryRow("select id,password from Students where email=?", userLogin.Email)
 
-			err = row.Scan(&password)
+			err = row.Scan(&id, &password)
 
 			if err != nil {
 				if err == sql.ErrNoRows {
@@ -95,11 +117,17 @@ func Login(c *gin.Context) {
 		}
 	}
 
-	if userLogin.Password != password {
+	// if userLogin.Password != password {
+	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+	// 	return
+	// }
+
+	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(userLogin.Password)); err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	tokenString, expiriesIn, err := middleware.Auth(userLogin)
+
+	tokenString, expiriesIn, err := middleware.Auth(userLogin, id)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -149,8 +177,6 @@ func StudentsRegisterHandler(c *gin.Context) {
 		return
 	}
 
-	var students []model.Student
-
 	for _, val := range result {
 
 		name := val.Get("Name").String()
@@ -163,17 +189,33 @@ func StudentsRegisterHandler(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-
 		hashedPassword := string(hash)
 
-		query, err := Db.Prepare("INSERT INTO students(name, email, mobileNo, password) VALUES(?,?,?,?)")
+		query, err := Db.Prepare("INSERT INTO Students(name, email, mobileNo, password) VALUES(?,?,?,?)")
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		query.Exec(name, email, mobile, hashedPassword)
 
-		students = append(students, model.Student{name, email, mobile, password})
+		result, err := query.Exec(name, email, mobile, hashedPassword)
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		lId, _ := result.LastInsertId()
+
+		query, err = Db.Prepare("INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
+
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		query.Exec(lId, 2)
+
+		students = append(students, model.Student{name, email, mobile, hashedPassword})
 	}
 	c.JSON(http.StatusOK, gin.H{"students": students})
 
@@ -271,7 +313,6 @@ func GetQuestions(c *gin.Context) {
 }
 
 func GetStudents(c *gin.Context) {
-	var students []model.Student
 	c.JSON(http.StatusOK, gin.H{"students": students})
 }
 
@@ -303,8 +344,8 @@ func GetAllRoutes(c *gin.Context) {
 	// Get the JWT string from the cookie
 	tokenString := cookie.Value
 
-	email, err := middleware.Decode(tokenString)
-
+	id, err := middleware.Decode(tokenString)
+	intId := int(id.(float64))
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -315,7 +356,6 @@ func GetAllRoutes(c *gin.Context) {
 	}
 
 	var routes []model.Route
-	var val int
 
 	// rows, err := Db.Query(`select * from menu where id in(
 	// 	select menuId from roleMenu where roleId =(
@@ -323,15 +363,20 @@ func GetAllRoutes(c *gin.Context) {
 	// 	select id from examiner where email=?
 	// 	)))`, email)
 
-	if email != "admin@example.org" {
-		val = 2
-	} else {
-		val = 1
-	}
+	// if email != "admin@example.org" {
+	// 	val = 2
+	// } else {
+	// 	val = 1
+	// }
 
-	rows, err := Db.Query(`select * from menu where id in(
-		select menuId from roleMenu where roleId =(
-		select roleId from userRole where userId=?))`, val)
+	// rows, err := Db.Query(`select * from menu where id in(
+	// 	select menuId from roleMenu where roleId =(
+	// 	select roleId from userRole where userId=?))`, val)
+
+	rows, err := Db.Query(`SELECT m.id,m.name,m.url,m.description FROM UserRole ur
+	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
+	INNER JOIN menu m ON rm.menuId = m.id
+	where ur.userId=?`, intId)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

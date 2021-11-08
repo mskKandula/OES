@@ -8,7 +8,7 @@ import (
 	"github.com/mskKandula/model"
 )
 
-func Auth(creds model.UserLogin) (string, time.Time, error) {
+func Auth(creds model.UserLogin, id int) (string, time.Time, error) {
 
 	var err error
 
@@ -22,6 +22,8 @@ func Auth(creds model.UserLogin) (string, time.Time, error) {
 	atClaims["email"] = creds.Email
 
 	atClaims["password"] = creds.Password
+
+	atClaims["id"] = id
 
 	expirationTime := time.Now().Add(time.Minute * 5)
 
@@ -53,16 +55,16 @@ func Decode(tokenString string) (interface{}, error) {
 
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
-			return "", err
+			return 0, err
 		}
-		return "", err
+		return 0, err
 	}
 
 	if !token.Valid {
-		return "", err
+		return 0, err
 	}
 
-	email := claims["email"]
+	id := claims["id"]
 
-	return email, nil
+	return id, nil
 }

@@ -17,13 +17,14 @@ import "./assets/scss/template.scss";
 
 const go = new Go()
 WebAssembly.instantiateStreaming(
-  fetch("countWords.wasm"), go.importObject
+  fetch("countMatching.wasm"), go.importObject
 ).then((result) => {
   go.run(result.instance)
 
-  Vue.prototype.$go = {
-    countser : countWordsInAns,
-  }
+  Vue.prototype.$go ={
+    countser : "countWordsInAns"
+  } 
+  
 })
 
 Vue.config.productionTip = false;

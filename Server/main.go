@@ -1,45 +1,52 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"io"
 	"log"
 	"os"
 
+	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/mskKandula/controller"
 )
 
+var (
+	err error
+)
+
 func init() {
-	controller.Db, err := sql.Open("mysql", "userName:password@tcp(address:port)/OES")
+	controller.Db, err = sql.Open("mysql", "mohanak:12345678@tcp(127.0.0.1:3306)/OES")
 
 	if err != nil {
-		log.Fatalf("Connection Failed to Open: %v",err.Error())
+		log.Fatalf("Connection Failed to Open: %v", err.Error())
 	}
 
 }
 
-func main(){
+func main() {
 	fmt.Println("Lets start OES")
 
 	// Disable Console Color, you don't need console color when writing the logs to file.
-    gin.DisableConsoleColor()
+	gin.DisableConsoleColor()
 
-    // Logging to a file.
-    f, _ := os.Create("Logs/gin.log")
-    gin.DefaultWriter = io.MultiWriter(f)
+	// Logging to a file.
+	f, _ := os.Create("Logs/gin.log")
+	gin.DefaultWriter = io.MultiWriter(f)
 
-	fs := http.FileServer(http.Dir("../Client/oes/dist"))
-	http.Handle("/", fs)
+	// fs := http.FileServer(http.Dir("../Client/oes/dist"))
 
 	r := gin.Default()
-	r.POST("/signUp",controller.SignUp)
-	r.POST("/login",controller.Login)
+	r.Use(static.Serve("/", static.LocalFile("../Client/oes/dist", false)))
+	r.POST("/signUp", controller.SignUp)
+	r.POST("/login", controller.Login)
 	r.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
 	r.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
 	r.GET("/getRoutes", controller.GetAllRoutes)
-	r.GET("/getQuestions",controller.GetQuestions)
+	r.GET("/getQuestions", controller.GetQuestions)
 	r.GET("/getStudents", controller.GetStudents)
 	r.GET("/logOut", controller.Logout)
-	r.Run(":8082")
+	r.Run(":8080")
 }

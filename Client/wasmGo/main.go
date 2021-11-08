@@ -7,8 +7,10 @@ import (
 	"syscall/js"
 )
 
-var count int = 0
-var arr = []string{"Mobile", "computer", "flower"}
+var (
+	count int = 0
+	arr       = []string{"Mobile", "computer", "flower"}
+)
 
 func counter() js.Func {
 	countFunc := js.FuncOf(func(this js.Value, args []js.Value) interface{} {
