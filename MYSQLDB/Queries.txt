@@ -18,16 +18,12 @@ CREATE TABLE Users(
 
 select * from Users;
 
-SET SQL_SAFE_UPDATES = 0;
-
-UPDATE examiner SET password = '121' WHERE age = 25;
-
 CREATE TABLE Students (  
     id int NOT NULL AUTO_INCREMENT,  
     name varchar(45) NOT NULL,
     email varchar(45) NOT NULL UNIQUE,
     mobileNo varchar(45) NOT NULL UNIQUE,
-    password varchar(45) NOT NULL,
+    password varchar(100) NOT NULL,
     PRIMARY KEY (id)  
 ); 
 
@@ -42,7 +38,7 @@ CREATE TABLE Menu (
 ); 
 
 INSERT INTO Menu(name,url,description) VALUES
-('Dashboad','/dashboard','Dashboard'),
+('Dashboard','/dashboard','Dashboard'),
 ('MultipleStudentsRegistration','/multipleStudentsRegistration','MultipleStudentsRegistration'),
 ('StudentsList','/studentsList','StudentsList');
 
@@ -50,9 +46,13 @@ INSERT INTO Menu(name,url,description) VALUES
 ('Uploadquestions','/uploadQuestions','Uploadquestions'),
 ('Exam','onlineExam','Exam');
 
+SET SQL_SAFE_UPDATES = 0;
+
 update Menu set url='/onlineExam' where name = 'Exam';
 
 select * from Menu;
+
+show tables;
 
 CREATE TABLE Role (  
     id int NOT NULL AUTO_INCREMENT,  
@@ -69,20 +69,16 @@ CREATE TABLE UserRole (
     roleId int NOT NULL
 );
 
-INSERT INTO UserRole(userId,roleId) VALUES(1,1),(2,2);
-
-select * from userRole;
-
 CREATE TABLE RoleMenu (  
     roleId int NOT NULL,  
     menuId int NOT NULL
 );
 
-INSERT INTO roleMenu(roleId,menuId) VALUES(2,5);
+INSERT INTO roleMenu(roleId,menuId) VALUES(2,1),(2,5);
 
+INSERT INTO roleMenu(roleId,menuId) VALUES(1,1),(1,2),(1,3),(1,4);
 
-select * from Menu where id in(
-		select menuId from RoleMenu where roleId =(
-		select roleId from UserRole where userId=2));
-
-show tables;
+SELECT m.id,m.name,m.url,m.description FROM UserRole ur
+	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
+	INNER JOIN menu m ON rm.menuId = m.id
+	where ur.userId=?;
