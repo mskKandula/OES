@@ -12,7 +12,7 @@
         
       </div> -->
 
-      <div v-for="(question, index) in users" :key="index">
+      <div v-for="(question, index) in questions" :key="index">
         <div v-show="index === questionIndex">
           <h4>{{ questionIndex + 1 }}:{{ question }}</h4>
           <textarea
@@ -35,14 +35,14 @@
           &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
           <button
             class="btn btn-theme btn-rounded mx-auto"
-            v-if="questionIndex < users.length - 1"
+            v-if="questionIndex < questions.length - 1"
             v-on:click="next"
           >
             next
           </button>
           <button
             class="btn btn-theme btn-rounded mx-auto"
-            v-if="index == users.length - 1"
+            v-if="index == questions.length - 1"
             @click="submitAnswer"
           >
             Submit
@@ -60,7 +60,7 @@
 </template>
 
 <script>
-// import usersData from "./users.json";
+// import questionsData from "./questions.json";
 import SimpleKeyboard from "./SimpleKeyboard";
 import "./App.css";
 import axios from "axios";
@@ -75,7 +75,7 @@ export default {
       lang_: "en_US",
       input: "",
       key: false,
-      users: [],
+      questions: [],
       questionIndex: 0,
       answer: [],
       test: "",
@@ -99,11 +99,10 @@ export default {
       this.questionIndex--;
     },
     submitAnswer() {
-      let self = this;
-      self.answer.push(self.input);
-      self.res = this.$go.countser(JSON.stringify({ ans: self.answer }));
-      if (self.res) {
-        self.$router.push({ name: "WordCounter", params: { count: self.res } });
+      this.answer.push(this.input);
+      this.res = this.$go.countser(JSON.stringify({ ans: this.answer }));
+      if (this.res) {
+        this.$router.push({ name: "WordCounter", params: { count: this.res } });
       }
     },
     onChange(input) {
@@ -153,7 +152,7 @@ export default {
         .get("/getQuestions")
         .then(function (res) {
           if (res.data) {
-            self.users = res.data.files;
+            self.questions = res.data.questions;
           }
         })
         .catch(function () {

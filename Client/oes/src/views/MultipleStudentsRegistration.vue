@@ -75,8 +75,7 @@ export default {
          solid: true,
         class: "toast"
         })
-          console.log("74",res.data);
-          self.$router.push({name :'StudentsList',params:{studentsList : res.data}} )
+          self.$router.push({name :'StudentsList',params:{studentsList : res.data.students}} )
            }else{
              self.$refs.myVueDropzone.removeFile(file);
            self.$bvToast.toast(`File is too big to parse`, {

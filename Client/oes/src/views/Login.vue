@@ -605,7 +605,6 @@ export default {
             solid: true,
             class: "toast",
           });
-          console.log("93", res.data);
         })
         .catch(function () {
           console.log("FAILURE!!");
@@ -620,7 +619,6 @@ export default {
           },
         })
         .then(function (res) {
-          console.log("58", res.config.data);
           if (res.config.data) {
             self.$router.push("/dashboard");
           }

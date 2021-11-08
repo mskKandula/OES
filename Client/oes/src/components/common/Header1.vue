@@ -145,20 +145,17 @@ export default {
   name: "Header1",
   data() {
     return {
-      routes: [],
-      token: "",
+      routes: []
     };
   },
   methods: {
     getRoutes() {
-      console.log("getallroutes");
       let self = this;
-      this.token = self.$cookies.get("token");
       axios
         .get("/getRoutes")
         .then(function(res) {
           if (res.data) {
-            self.routes = res.data;
+            self.routes = res.data.routes;
           }
         })
         .catch(function() {
@@ -172,9 +169,8 @@ export default {
     logout() {
       let self = this;
       axios
-        .post("/logout", {})
-        .then(function(res) {
-          console.log(res)
+        .get("/logOut")
+        .then(function() {
           self.$router.push("/");
         })
         .catch(function() {
@@ -182,19 +178,18 @@ export default {
         });
     },
   },
-  mounted() {
-    let searchBox = document.querySelector(".search-input").parentElement;
-    console.log(searchBox);
-    if (window.matchMedia("(min-width: 992px)").matches) {
-      /* The viewport is less than, or equal to, 700 pixels wide */
-      document
-        .querySelector(".navigation .navbar-collapse")
-        .appendChild(searchBox);
-    } else {
-      /* The viewport is greater than 700 pixels wide */
-      document.querySelector(".navigation .navbar ").prepend(searchBox);
-    }
-  },
+  // mounted() {
+  //   let searchBox = document.querySelector(".search-input").parentElement;
+  //   if (window.matchMedia("(min-width: 992px)").matches) {
+  //     /* The viewport is less than, or equal to, 700 pixels wide */
+  //     document
+  //       .querySelector(".navigation .navbar-collapse")
+  //       .appendChild(searchBox);
+  //   } else {
+  //     /* The viewport is greater than 700 pixels wide */
+  //     document.querySelector(".navigation .navbar ").prepend(searchBox);
+  //   }
+  // },
   created() {
     this.getRoutes();
   },

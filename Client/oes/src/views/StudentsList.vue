@@ -30,11 +30,13 @@ export default {
   },
   methods:{
      getstudents(){
+       let self = this
        axios
         .get("/getStudents")
         .then(function(res) {
           if (res.data) {
-            self.studentsList = res.data;
+            console.log("38",res)
+            self.studentsList = res.data.students;
           }
         })
         .catch(function() {
@@ -44,10 +46,10 @@ export default {
      },
      created(){
         this.studentsList = this.$route.params.studentsList
-     }
-//  mounted() {
-//      this.getstudents();
-// }
+     },
+ mounted() {
+     this.getstudents();
+}
 }
 </script>
 <style lang="scss">

@@ -74,7 +74,6 @@ export default {
               solid: true,
               class: "toast",
             });
-            console.log("74", res.data);
           } else {
             self.$refs.myVueDropzone.removeFile(file);
             self.$bvToast.toast(`File is too big to parse`, {
