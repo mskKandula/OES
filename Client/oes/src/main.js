@@ -10,21 +10,20 @@ import VueCookies from 'vue-cookies';
 // import "bootstrap/dist/css/bootstrap.css"
 import "bootstrap-vue/dist/bootstrap-vue.css";
 import "./assets/scss/bootstrap-custom.scss";
-// import "../node_modules/vue-multiselect/dist/vue-multiselect.min.css";
+import "../node_modules/vue-multiselect/dist/vue-multiselect.min.css";
 import "./assets/plugins/materialdesignicons/css/materialdesignicons.min.css";
 // import "swiper/dist/css/swiper.css";
 import "./assets/scss/template.scss";
 
 const go = new Go()
 WebAssembly.instantiateStreaming(
-  fetch("countMatching.wasm"), go.importObject
+  fetch("main.wasm"), go.importObject
 ).then((result) => {
   go.run(result.instance)
 
-  Vue.prototype.$go ={
-    countser : "countWordsInAns"
-  } 
-  
+  Vue.prototype.$go = {
+    countser : countWords,
+  }
 })
 
 Vue.config.productionTip = false;

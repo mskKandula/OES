@@ -43,6 +43,6 @@ func contain(s string, wordDict []string) bool {
 
 func main() {
 	fmt.Println("Go Web Assembly")
-	js.Global().Set("countWordsInAns", counter())
+	js.Global().Set("countWords", counter())
 	<-make(chan bool)
 }
