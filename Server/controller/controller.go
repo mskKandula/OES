@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"database/sql"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/mskKandula/emailConfig"
 	"github.com/mskKandula/middleware"
 	"github.com/mskKandula/model"
 	"github.com/tealeg/xlsx/v3"
@@ -215,6 +217,16 @@ func StudentsRegisterHandler(c *gin.Context) {
 
 		query.Exec(lId, 2)
 
+		student := model.BasicDetails{
+			name,
+			email,
+			password,
+		}
+
+		if err = emailConfig.SendEmail(student); err != nil {
+			fmt.Println("Error while sending email", err)
+		}
+
 		students = append(students, model.Student{name, email, mobile, hashedPassword})
 	}
 	c.JSON(http.StatusOK, gin.H{"students": students})
@@ -313,6 +325,25 @@ func GetQuestions(c *gin.Context) {
 }
 
 func GetStudents(c *gin.Context) {
+	rows, err := Db.Query(`SELECT name,email,mobileNo from Students`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer rows.Close()
+	students = nil
+	for rows.Next() {
+		var student model.Student
+
+		if err := rows.Scan(&student.Name, &student.Email, &student.Mobile); err != nil {
+
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		students = append(students, student)
+
+	}
 	c.JSON(http.StatusOK, gin.H{"students": students})
 }
 

@@ -26,3 +26,9 @@ type Route struct {
 	Url         string `json:"url"`
 	Description string `json:"description"`
 }
+
+type BasicDetails struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
