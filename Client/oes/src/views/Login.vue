@@ -619,8 +619,12 @@ export default {
           },
         })
         .then(function (res) {
-          if (res.config.data) {
+          if (res.data) {
+            if (res.data.userType === "User"){
             self.$router.push("/dashboard");
+            }else{
+              self.$router.push("/studentDashboard")
+            }
           }
         })
         .catch(function () {

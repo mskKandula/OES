@@ -33,6 +33,14 @@ const routes = [
         },
       },
       {
+        path: "/studentDashboard",
+        name: "StudentDashboard",
+        component: loadView("StudentDashboard"),
+        meta: {
+          title: "StudentDashboard",
+        },
+      },
+      {
         path: "/multipleStudentsRegistration",
         name: "MultipleStudentsRegistration",
         component: loadView("MultipleStudentsRegistration"),
