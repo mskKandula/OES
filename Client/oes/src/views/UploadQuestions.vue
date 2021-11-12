@@ -32,6 +32,7 @@
 import vue2Dropzone from "vue2-dropzone";
 import "vue2-dropzone/dist/vue2Dropzone.min.css";
 import axios from "axios";
+import { mapGetters } from 'vuex'
 export default {
   components: { vueDropzone: vue2Dropzone },
   data() {
@@ -48,7 +49,7 @@ export default {
   },
   methods: {
     submitFile(file) {
-      let self = this;
+      const self = this;
       let formData = new FormData();
 
       /*
@@ -67,6 +68,7 @@ export default {
         .then(function (res) {
           self.$refs.myVueDropzone.removeFile(file);
           if (res.data) {
+            self.notifyStudents()
             self.$bvToast.toast(`Imported Successfully`, {
               title: "Success",
               variant: "success",
@@ -83,6 +85,7 @@ export default {
               solid: true,
               class: "toast",
             });
+
           }
         })
         .catch(function () {
@@ -97,7 +100,18 @@ export default {
           console.log("FAILURE!!");
         });
     },
+    notifyStudents(){
+      this.socketConn.send(JSON.stringify({
+        type: 1,
+        body: "Exam has started, Please check",
+        id : "6666" }))
+    }
   },
+  computed:{
+    ...mapGetters({
+      socketConn: 'getConn'
+    }),
+  }
 };
 </script>
 
