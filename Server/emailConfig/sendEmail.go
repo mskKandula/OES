@@ -12,7 +12,7 @@ import (
 
 func SendEmail(user model.BasicDetails) error {
 
-	body, err := makeTemplate(user, "./Templates/registrationMailTemplate.html")
+	body, err := makeTemplate(user, "./registrationMailTemplate.html")
 
 	if err != nil {
 		return err
@@ -24,7 +24,7 @@ func SendEmail(user model.BasicDetails) error {
 	m.SetHeader("Subject", "Registration Successfull!")
 	m.SetBody("text/html", body)
 
-	d := gomail.NewPlainDialer("smtp.gmail.com", 587, variables.SenderEmail, variables.Password)
+	d := gomail.NewDialer("smtp.gmail.com", 587, variables.SenderEmail, variables.Password)
 
 	if err := d.DialAndSend(m); err != nil {
 		return err
