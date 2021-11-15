@@ -18,7 +18,7 @@ var (
 )
 
 func init() {
-	controller.Db, err = sql.Open("mysql", "mohanak:12345678@tcp(127.0.0.1:3306)/OES")
+	controller.Db, err = sql.Open("mysql", "UserName:Password@tcp(127.0.0.1:3306)/OES")
 
 	if err != nil {
 		log.Fatalf("Connection Failed to Open: %v", err.Error())
@@ -44,6 +44,7 @@ func main() {
 	r.POST("/login", controller.Login)
 	r.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
 	r.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
+	r.GET("/ws", controller.Notification)
 	r.GET("/getRoutes", controller.GetAllRoutes)
 	r.GET("/getQuestions", controller.GetQuestions)
 	r.GET("/getStudents", controller.GetStudents)
