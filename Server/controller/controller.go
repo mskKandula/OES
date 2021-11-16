@@ -7,15 +7,18 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/schema"
 	"github.com/mskKandula/emailConfig"
 	"github.com/mskKandula/middleware"
 	"github.com/mskKandula/model"
+	"github.com/mskKandula/websock"
 	"github.com/tealeg/xlsx/v3"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
@@ -89,6 +92,7 @@ func Login(c *gin.Context) {
 	var (
 		id       int
 		password string
+		userType string = "User"
 	)
 
 	if err := c.ShouldBindJSON(&userLogin); err != nil {
@@ -116,6 +120,7 @@ func Login(c *gin.Context) {
 					return
 				}
 			}
+			userType = "Student"
 		}
 	}
 
@@ -142,7 +147,7 @@ func Login(c *gin.Context) {
 		Expires: expiriesIn,
 	})
 
-	c.JSON(http.StatusOK, gin.H{"token": tokenString, "expirationTime": expiriesIn})
+	c.JSON(http.StatusOK, gin.H{"userType": userType})
 }
 
 func StudentsRegisterHandler(c *gin.Context) {
@@ -224,7 +229,7 @@ func StudentsRegisterHandler(c *gin.Context) {
 		}
 
 		if err = emailConfig.SendEmail(student); err != nil {
-			fmt.Println("Error while sending email", err)
+			log.Println("Error while sending email", err)
 		}
 
 		students = append(students, model.Student{name, email, mobile, hashedPassword})
@@ -318,6 +323,43 @@ func QuestionsUploadHandler(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines})
 
+}
+
+func Notification(c *gin.Context) {
+
+	pool := websock.NewPool()
+
+	go pool.Start()
+
+	serveWs(pool, c.Writer, c.Request)
+
+}
+
+func serveWs(pool *websock.Pool, w http.ResponseWriter, r *http.Request) {
+	log.Println("WebSocket Endpoint Hit")
+
+	var details websock.Details
+
+	decoder := schema.NewDecoder()
+
+	decoder.Decode(&details, r.URL.Query())
+	// if err != nil {
+	//     log.Fprintf(w, "%+v\n", err)
+	// }
+
+	conn, err := websock.Upgrade(w, r)
+	if err != nil {
+		fmt.Fprintf(w, "%+v\n", err)
+	}
+
+	client := &websock.Client{
+		Conn:    conn,
+		Pool:    pool,
+		Details: &details,
+	}
+
+	pool.Register <- client
+	client.Read()
 }
 
 func GetQuestions(c *gin.Context) {
