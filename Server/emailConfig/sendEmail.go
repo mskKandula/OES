@@ -2,6 +2,7 @@ package emailConfig
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"html/template"
 
@@ -12,7 +13,7 @@ import (
 
 func SendEmail(user model.BasicDetails) error {
 
-	body, err := makeTemplate(user, "./registrationMailTemplate.html")
+	body, err := makeTemplate(user, "./emailConfig/registrationMailTemplate.html")
 
 	if err != nil {
 		return err
@@ -21,10 +22,11 @@ func SendEmail(user model.BasicDetails) error {
 	m := gomail.NewMessage()
 	m.SetHeader("From", variables.SenderEmail)
 	m.SetHeader("To", user.Email)
-	m.SetHeader("Subject", "Registration Successfull!")
+	m.SetHeader("Subject", "Registration Successful!")
 	m.SetBody("text/html", body)
 
 	d := gomail.NewDialer("smtp.gmail.com", 587, variables.SenderEmail, variables.Password)
+	d.TLSConfig = &tls.Config{InsecureSkipVerify: true} //comment it out for Production
 
 	if err := d.DialAndSend(m); err != nil {
 		return err
