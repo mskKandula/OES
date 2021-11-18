@@ -9,6 +9,11 @@ function loadView(view) {
     import(/* webpackChunkName: "view-[request]" */ `@/views/${view}.vue`);
 }
 
+function loadCharts(view) {
+  return () =>
+    import(/* webpackChunkName: "view-[request]" */ `@/views/Charts/${view}.vue`);
+}
+
 const routes = [
   {
     path: "/",
@@ -79,6 +84,14 @@ const routes = [
         component: loadView("WordCounter"),
         meta: {
           title: "WordCounter",
+        },
+      },
+      {
+        path: "/bar",
+        name: "Bar",
+        component: loadCharts("Bar"),
+        meta: {
+          title: "Bar",
         },
       },
     ],
