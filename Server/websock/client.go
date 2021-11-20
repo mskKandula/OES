@@ -1,11 +1,16 @@
 package websock
 
 import (
-	"fmt"
 	"log"
+	"math/rand"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+type IntegerArray struct {
+	Intarr []int `json : intarr`
+}
 
 type Details struct {
 	Role string `json:"role"`
@@ -34,14 +39,38 @@ func (c *Client) Read() {
 		m := Message{}
 
 		err := c.Conn.ReadJSON(&m)
-
 		if err != nil {
 			log.Println(err)
 			return
 		}
 
-		c.Pool.Broadcast <- m
+		if m.Type == 2 {
+			chart(c)
+		} else {
+			c.Pool.Broadcast <- m
+		}
 
-		fmt.Printf("Message Received: %+v\n", m)
+		// fmt.Printf("Message Received: %+v\n", m)
 	}
+}
+
+func chart(c *Client) {
+
+	for i := 0; i < 5; i++ {
+
+		rand.Seed(time.Now().UnixNano())
+
+		i := &IntegerArray{
+
+			Intarr: rand.Perm(12),
+		}
+
+		if err := c.Conn.WriteJSON(i); err != nil {
+			log.Println(err)
+			return
+		}
+
+		time.Sleep(3 * time.Second)
+	}
+	return
 }
