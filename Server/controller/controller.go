@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -31,6 +32,7 @@ var (
 	err           error
 	fileTextLines []string
 	students      []model.Student
+	rowHeaders    []string
 
 	requiredKeys = []string{
 		"Name",
@@ -468,4 +470,91 @@ func GetAllRoutes(c *gin.Context) {
 		routes = append(routes, route)
 	}
 	c.JSON(http.StatusOK, gin.H{"routes": routes})
+}
+
+func DownloadStudents(c *gin.Context) {
+
+	file, err := PrepareExcelFile("All Students Details")
+	ReportName := "All Students Details" + ".xlsx"
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Writer.Header().Add("Content-type", "application/octet-stream")
+	c.Writer.Header().Set("Content-Disposition", "attachment; filename="+ReportName+".xlsx")
+	c.Writer.Header().Set("Content-Transfer-Encoding", "binary")
+	file.Write(c.Writer)
+}
+
+func PrepareExcelFile(SheetName string) (*xlsx.File, error) {
+	var file *xlsx.File
+
+	var result []map[string]interface{}
+
+	byteData, err := json.Marshal(students)
+
+	if err != nil {
+		return file, err
+	}
+
+	err = json.Unmarshal(byteData, &result)
+
+	if err != nil {
+		return file, err
+	}
+
+	file, err = generateExcel(result, SheetName)
+
+	if err != nil {
+		return file, err
+	}
+
+	return file, nil
+}
+
+func generateExcel(studentListResult []map[string]interface{}, SheetName string) (*xlsx.File, error) {
+
+	var file *xlsx.File
+	var sheet *xlsx.Sheet
+	var row *xlsx.Row
+
+	file = xlsx.NewFile()
+
+	sheet, err = file.AddSheet(SheetName)
+
+	if err != nil {
+		return file, err
+	}
+
+	row = sheet.AddRow()
+
+	row.SetHeight(15)
+
+	row.Hidden = false
+
+	for key, val := range studentListResult[0] {
+		if len(val.(string)) > 0 {
+			row.AddCell().SetString(strings.ToUpper(key))
+			rowHeaders = append(rowHeaders, key)
+		}
+	}
+
+	for _, obj := range studentListResult {
+
+		row = sheet.AddRow()
+
+		row.SetHeight(15)
+
+		row.Hidden = false
+
+		for _, key := range rowHeaders {
+
+			val := obj[key]
+
+			row.AddCell().SetString(val.(string))
+
+		}
+
+	}
+	return file, nil
 }
