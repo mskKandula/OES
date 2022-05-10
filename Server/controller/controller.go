@@ -558,3 +558,47 @@ func generateExcel(studentListResult []map[string]interface{}, SheetName string)
 	}
 	return file, nil
 }
+
+func VideoUploadHandler(c *gin.Context) {
+	file, handler, err := c.Request.FormFile("videoFile")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer file.Close()
+
+	paths := strings.Split(handler.Filename, ".")
+
+	if paths[1] != "mp4" {
+		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
+		return
+	}
+
+	if handler.Size > 10*1024*1024 {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "File size is big"})
+		return
+	}
+
+	path := "../../media/video/" + paths[0] + "/" + handler.Filename
+
+	dstFile, err := create(path)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = io.Copy(dstFile, file)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer dstFile.Close()
+
+	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
+
+}
