@@ -35,6 +35,7 @@ var (
 	fileTextLines []string
 	students      []model.Student
 	rowHeaders    []string
+	BufChan       = make(chan string, 10)
 
 	requiredKeys = []string{
 		"Name",
@@ -603,6 +604,8 @@ func VideoUploadHandler(c *gin.Context) {
 	}
 
 	defer dstFile.Close()
+
+	bufChan <- path
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 

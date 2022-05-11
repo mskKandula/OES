@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mskKandula/controller"
+	"github.com/mskKandula/runningProcess"
 )
 
 var (
@@ -28,6 +29,12 @@ func init() {
 
 func main() {
 	fmt.Println("Lets start OES")
+
+	go runningProcess.HlsVideoConversion(controller.BufChan)
+
+	defer func() {
+		close(controller.BufChan)
+	}()
 
 	// Disable Console Color, you don't need console color when writing the logs to file.
 	gin.DisableConsoleColor()
