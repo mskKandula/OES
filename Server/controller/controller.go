@@ -34,6 +34,7 @@ var (
 	err           error
 	fileTextLines []string
 	students      []model.Student
+	videos        []model.Video
 	rowHeaders    []string
 	BufChan       = make(chan string, 10)
 
@@ -586,7 +587,10 @@ func VideoUploadHandler(c *gin.Context) {
 		return
 	}
 
-	path := "../../media/video/" + paths[0] + "/" + handler.Filename
+	path := "../media/video/" + paths[0] + "/" + handler.Filename
+
+	m3u8Path := "media/video/" + paths[0] + "/" + "index.m3u8"
+	imagePath := "media/video/" + paths[0] + "/" + paths[0] + ".png"
 
 	// FilePath Creation
 	dstFile, err := create(path)
@@ -605,7 +609,21 @@ func VideoUploadHandler(c *gin.Context) {
 
 	defer dstFile.Close()
 
-	bufChan <- path
+	query, err := Db.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description) VALUES(?,?,?,?,?)")
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = query.Exec(paths[0], m3u8Path, imagePath, "video/mp4", "Sample Video")
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	BufChan <- path
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 
@@ -617,4 +635,27 @@ func create(path string) (*os.File, error) {
 		return nil, err
 	}
 	return os.Create(path)
+}
+
+func GetVideos(c *gin.Context) {
+	rows, err := Db.Query(`SELECT name, videoUrl,thumbnailPath,description from VideoContent`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer rows.Close()
+	videos = nil
+	for rows.Next() {
+		var video model.Video
+
+		if err := rows.Scan(&video.Name, &video.VideoUrl, &video.ThumbnailPath, &video.Description); err != nil {
+
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		videos = append(videos, video)
+
+	}
+	c.JSON(http.StatusOK, gin.H{"videos": videos})
 }
