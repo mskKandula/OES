@@ -32,3 +32,10 @@ type BasicDetails struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type Video struct {
+	Name          string `json:"name"`
+	VideoUrl      string `json:"videoUrl"`
+	ThumbnailPath string `json:"thumbnailPath"`
+	Description   string `json:"description"`
+}
