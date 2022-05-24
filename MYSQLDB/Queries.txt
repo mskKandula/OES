@@ -82,3 +82,16 @@ SELECT m.id,m.name,m.url,m.description FROM UserRole ur
 	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
 	INNER JOIN menu m ON rm.menuId = m.id
 	where ur.userId=?;
+
+DROP TABLE VideoContent;
+
+CREATE TABLE VideoContent(
+   id INT NOT NULL AUTO_INCREMENT,  
+    NAME VARCHAR(45) NOT NULL,
+    videoUrl VARCHAR(100) NOT NULL,
+    thumbnailPath VARCHAR(100) NOT NULL,
+    contentType VARCHAR(50) NOT NULL,
+    description VARCHAR(100),
+    PRIMARY KEY (id));
+    
+SELECT * FROM VideoContent;
