@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mskKandula/controller"
+	"github.com/mskKandula/runningProcess"
 )
 
 var (
@@ -18,7 +19,7 @@ var (
 )
 
 func init() {
-	controller.Db, err = sql.Open("mysql", "UserName:Password@tcp(127.0.0.1:3306)/OES")
+	controller.Db, err = sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/OES")
 
 	if err != nil {
 		log.Fatalf("Connection Failed to Open: %v", err.Error())
@@ -28,6 +29,12 @@ func init() {
 
 func main() {
 	fmt.Println("Lets start OES")
+
+	go runningProcess.HlsVideoConversion(controller.BufChan)
+
+	defer func() {
+		close(controller.BufChan)
+	}()
 
 	// Disable Console Color, you don't need console color when writing the logs to file.
 	gin.DisableConsoleColor()
@@ -44,9 +51,11 @@ func main() {
 	r.POST("/login", controller.Login)
 	r.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
 	r.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
+	r.POST("/uploadVideoContent", controller.VideoUploadHandler)
 	r.GET("/ws", controller.Notification)
 	r.GET("/getRoutes", controller.GetAllRoutes)
 	r.GET("/getQuestions", controller.GetQuestions)
+	r.GET("/getVideos", controller.GetVideos)
 	r.GET("/getStudents", controller.GetStudents)
 	r.GET("/downloadStudents", controller.DownloadStudents)
 	r.GET("/logOut", controller.Logout)

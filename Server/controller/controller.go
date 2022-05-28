@@ -10,6 +10,8 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/dgrijalva/jwt-go"
@@ -32,7 +34,9 @@ var (
 	err           error
 	fileTextLines []string
 	students      []model.Student
+	videos        []model.Video
 	rowHeaders    []string
+	BufChan       = make(chan string, 10)
 
 	requiredKeys = []string{
 		"Name",
@@ -557,4 +561,101 @@ func generateExcel(studentListResult []map[string]interface{}, SheetName string)
 
 	}
 	return file, nil
+}
+
+func VideoUploadHandler(c *gin.Context) {
+	file, handler, err := c.Request.FormFile("videoFile")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer file.Close()
+
+	paths := strings.Split(handler.Filename, ".")
+
+	// checking the File Type, if not mp4 return
+	if paths[1] != "mp4" {
+		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
+		return
+	}
+
+	// checking the File Size, if more than 10mb return
+	if handler.Size > 10*1024*1024 {
+		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "File size is big"})
+		return
+	}
+
+	path := "../media/video/" + paths[0] + "/" + handler.Filename
+
+	m3u8Path := "media/video/" + paths[0] + "/" + "index.m3u8"
+	imagePath := "media/video/" + paths[0] + "/" + paths[0] + ".png"
+
+	// FilePath Creation
+	dstFile, err := create(path)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = io.Copy(dstFile, file)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer dstFile.Close()
+
+	query, err := Db.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description) VALUES(?,?,?,?,?)")
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = query.Exec(paths[0], m3u8Path, imagePath, "video/mp4", "Sample Video")
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	BufChan <- path
+
+	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
+
+}
+
+// file path creation
+func create(path string) (*os.File, error) {
+	if err := os.MkdirAll(filepath.Dir(path), 0770); err != nil {
+		return nil, err
+	}
+	return os.Create(path)
+}
+
+func GetVideos(c *gin.Context) {
+	rows, err := Db.Query(`SELECT name, videoUrl,thumbnailPath,description from VideoContent`)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer rows.Close()
+	videos = nil
+	for rows.Next() {
+		var video model.Video
+
+		if err := rows.Scan(&video.Name, &video.VideoUrl, &video.ThumbnailPath, &video.Description); err != nil {
+
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		videos = append(videos, video)
+
+	}
+	c.JSON(http.StatusOK, gin.H{"videos": videos})
 }

@@ -94,6 +94,22 @@ const routes = [
           title: "Bar",
         },
       },
+      {
+        path: "/uploadVideo",
+        name: "UploadVideo",
+        component: loadView("UploadVideo"),
+        meta: {
+          title: "UploadVideo",
+        },
+      },
+      {
+        path: "/fetchVideos",
+        name: "VideoContent",
+        component: loadView("VideoContent"),
+        meta: {
+          title: "VideoContent",
+        },
+      },
     ],
   },
 ];
