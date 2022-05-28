@@ -48,6 +48,10 @@ func main() {
 	r.GET("/getRoutes", controller.GetAllRoutes)
 	r.GET("/getQuestions", controller.GetQuestions)
 	r.GET("/getStudents", controller.GetStudents)
+	r.GET("/downloadStudents", controller.DownloadStudents)
 	r.GET("/logOut", controller.Logout)
+	// go func() {
+	// 	r.Run(":8081")
+	// }()
 	r.Run(":8080")
 }
