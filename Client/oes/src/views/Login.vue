@@ -598,6 +598,7 @@ export default {
       axios
         .post("/signUp", self.details)
         .then(function (res) {
+          console.log(res)
           self.$bvToast.toast(`Registered successfully`, {
             title: "Success",
             variant: "success",

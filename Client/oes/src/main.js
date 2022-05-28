@@ -22,7 +22,7 @@ WebAssembly.instantiateStreaming(
   go.run(result.instance)
 
   Vue.prototype.$go = {
-    countser : countWords,
+    countser : this.countWords,
   }
 })
 
