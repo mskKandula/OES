@@ -81,6 +81,20 @@
           </div>
         </div>
       </div>
+
+       <div>
+        <ul
+        >
+          <NestetedMainMenus
+            v-for="(node, index) in menulist"
+            :key="index"
+            :index="index"
+            :children="node"
+            :depth="1"
+            :disabled-link="forceToChange"
+          />
+        </ul>
+        </div>
       <!-- top navigation -->
       <!-- <div class="navigation">
         <div class="row no-gutters">
@@ -138,11 +152,15 @@
 </template>
 <script>
 // import Vue from "vue";
+import NestetedMainMenus from '../ui/NestetedMainMenus'
 import axios from "axios";
 // import lodashOrderBy from 'lodash/orderBy'
 
 export default {
   name: "Header1",
+  components: {
+    NestetedMainMenus
+  },
   data() {
     return {
       routes: []
@@ -193,6 +211,30 @@ export default {
   created() {
     this.getRoutes();
   },
+   computed: {
+      menuList () {
+         let fields = [
+            {
+            label: 'Charts',
+            url: '',
+            openInNewTab: false,
+            nodes: [
+              {
+                label: 'Bar',
+                url: '/bar',
+                openInNewTab: false,
+              },
+              {
+                label: 'Line',
+                url: "/line",
+                openInNewTab: false
+              }
+            ]
+          },
+         ]
+         return fields
+      }
+}
 };
 </script>
 
