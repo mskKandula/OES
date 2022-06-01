@@ -3,10 +3,10 @@
 
 <h2>Videos List</h2>
 
-<div class="row" v-for="(vid,index) in this.videosList"
+<div  class="row" v-for="(vid,index) in this.videosList"
   :key="index"> 
-  <div class="col-4">
-  <img :src="'../../../../'+ vid.thumbnailPath" :alt="vid.description" width="300" height="300" @click="playVideo(vid.videoUrl)">
+  <div class="col-4 mx-1">
+  <img :src="'http://127.0.0.1:8887/'+ vid.thumbnailPath" :alt="vid.description" width="300" height="300" @click="playVideo(vid.videoUrl)">
     </div> 
   </div>
   </div>

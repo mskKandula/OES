@@ -1,8 +1,6 @@
 <template>
-  <div class="main-content">
-
-<h2>Videos List</h2>
-  
+  <div>
+    
   <video ref="videoRef" controls>
 </video>
  
@@ -15,7 +13,7 @@ export default {
   data() {
     return {
       hls: null,
-      videoUrl: null
+      videoUrl: ""
     };
   },
 created(){
@@ -24,8 +22,7 @@ created(){
  mounted() {
     this.hls = new Hls();
     let video = this.$refs["videoRef"];
-    let url = "http://127.0.0.1:8887"+this.videoUrl
-    console.log("28",url)
+    let url = "http://127.0.0.1:8887/"+this.videoUrl
     this.hls.loadSource(url);
     this.hls.attachMedia(video);
     this.hls.on(Hls.Events.MANIFEST_PARSED, function () {
