@@ -622,9 +622,9 @@ export default {
         .then(function (res) {
           if (res.data) {
             if (res.data.userType === "User"){
-            self.$router.push("/dashboard");
+            self.$router.push({path:"/dashboard"});
             }else{
-              self.$router.push("/studentDashboard")
+              self.$router.push({path:"/studentDashboard"})
             }
           }
         })
