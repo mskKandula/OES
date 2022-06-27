@@ -118,6 +118,14 @@ const routes = [
           title: "VideoPlay",
         },
       },
+      {
+        path: "/videoCaption",
+        name: "VideoCaptioning",
+        component: loadView("VideoCaptioning"),
+        meta: {
+          title: "VideoCaptioning",
+        },
+      },
     ],
   },
 ];
