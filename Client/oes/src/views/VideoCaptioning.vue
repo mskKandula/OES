@@ -22,7 +22,21 @@ export default {
     }
   },
   methods:{
-      
+     drawCanvas(screenIn, cameraIn,canvas){
+        var textLength = 60;
+        canvas.drawImage(screenIn, screenX0,screenY0, screenX1, screenY1);
+        canvas.drawImage(cameraIn, cameraX0, cameraY0, cameraX1, cameraY1);
+       //write transcript on the screen
+        if(this.interim_transcript.length <textLength){
+            ctx.fillText(this.interim_transcript, captionX, captionY);
+        }
+        else{
+            ctx.fillText("no captions", captionX, captionY);
+    
+        }
+        setTimeout(drawCanvas, 20,screenIn, cameraIn,canvas);
+
+    },
 checkSpeech(){
        if('webkitSpeechRecognition' in window){
             console.log("speech recognition supported");
