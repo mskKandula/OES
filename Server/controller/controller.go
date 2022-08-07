@@ -2,7 +2,6 @@ package controller
 
 import (
 	"bufio"
-	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -314,12 +313,12 @@ func QuestionsUploadHandler(c *gin.Context) {
 		return
 	}
 
-	buf := bytes.NewBuffer(nil)
-	if _, err = io.Copy(buf, file); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	fileScanner := bufio.NewScanner(buf)
+	// buf := bytes.NewBuffer(nil)
+	// if _, err = io.Copy(buf, file); err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+	fileScanner := bufio.NewScanner(file)
 
 	fileScanner.Split(bufio.ScanLines)
 
