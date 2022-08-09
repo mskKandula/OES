@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/dgrijalva/jwt-go"
+	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/schema"
@@ -21,7 +21,7 @@ import (
 	"github.com/mskKandula/middleware"
 	"github.com/mskKandula/model"
 	"github.com/mskKandula/websock"
-	"github.com/tealeg/xlsx/v3"
+	xlsx "github.com/tealeg/xlsx/v3"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 	"golang.org/x/crypto/bcrypt"
