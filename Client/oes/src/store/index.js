@@ -6,7 +6,10 @@ Vue.use(Vuex)
 export default new Vuex.Store({
   state: {
     onceFlag: true,
-    wsConn: ""
+    wsConn: "",
+    notificationData:"",
+    chatData:"",
+    whiteBoardData:""
   },
   mutations: {
     setConn (state, data) {
@@ -14,13 +17,25 @@ export default new Vuex.Store({
     },
     setOnlyOnce(state, data){
       state.onceFlag = data
-    }
+    },
+    setNotification(state,data){
+      state.notificationData=data
+    },
+    setChat(state,data){
+      state.chatData=data
+    },
+    setWhiteBoard(state,data){
+      state.whiteBoardData=data
+    },
   },
   actions: {
   },
   getters: {
     getConn: (state) => state.wsConn,
-    getOnce: (state) => state.onceFlag	
+    getOnce: (state) => state.onceFlag,
+    getNotification: (state) => state.notificationData,
+    getChat: (state) => state.chatData,
+    getWhiteBoard: (state) => state.whiteBoardData
   },
   modules: {
   }
