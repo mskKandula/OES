@@ -10,6 +10,7 @@ import (
 	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/mskKandula/config"
 	"github.com/mskKandula/controller"
 	"github.com/mskKandula/runningProcess"
 )
@@ -24,6 +25,9 @@ func init() {
 	if err != nil {
 		log.Fatalf("Connection Failed to Open: %v", err.Error())
 	}
+
+	// Create Redis Client
+	config.CreateRedisClient()
 
 }
 
