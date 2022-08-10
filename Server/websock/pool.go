@@ -1,11 +1,18 @@
 package websock
 
 import (
+	"context"
 	"fmt"
 	"log"
+
+	"github.com/mskKandula/config"
 )
 
 // var Conns = make(map[*websocket.Conn]bool)
+
+const PubSubGeneralChannel = "general"
+
+var ctx = context.Background()
 
 type Pool struct {
 	Register   chan *Client
@@ -30,6 +37,9 @@ func NewPool() *Pool {
 }
 
 func (pool *Pool) Start() {
+
+	go pool.listenPubSubChannel()
+
 	for {
 		select {
 
@@ -54,21 +64,45 @@ func (pool *Pool) Start() {
 			// }
 
 		case message := <-pool.Broadcast:
-
-			fmt.Println("Sending message to all clients in Pool")
-
-			for _, client := range pool.Clients[message.Id] {
-
-				if client.Details.Role == "Student" {
-
-					if err := client.Conn.WriteJSON(message); err != nil {
-
-						log.Println(err)
-						return
-					}
-				}
-
-			}
+			// Publish the message on "general" channel
+			pool.publishMessage(message)
 		}
+	}
+}
+
+// Redis Publish message functionality
+func (pool *Pool) publishMessage(msg Message) {
+	err := config.Redis.Publish(ctx, PubSubGeneralChannel, msg).Err()
+
+	if err != nil {
+		log.Println(err)
+		return
+	}
+}
+
+// Redis Subscribe & Listen on channel("general") functionality
+func (pool *Pool) listenPubSubChannel() {
+
+	pubsub := config.Redis.Subscribe(ctx, PubSubGeneralChannel)
+
+	ch := pubsub.Channel()
+
+	for msg := range ch {
+
+		fmt.Println("Sending message to all clients in Pool")
+
+		for _, client := range pool.Clients[msg.Id] {
+
+			if client.Details.Role == "Student" {
+
+				if err := client.Conn.WriteJSON(msg); err != nil {
+
+					log.Println(err)
+					return
+				}
+			}
+
+		}
+
 	}
 }
