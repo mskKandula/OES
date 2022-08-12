@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-contrib/static"
@@ -13,6 +14,7 @@ import (
 	"github.com/mskKandula/config"
 	"github.com/mskKandula/controller"
 	"github.com/mskKandula/runningProcess"
+	"github.com/mskKandula/websock"
 )
 
 var (
@@ -36,6 +38,10 @@ func main() {
 
 	go runningProcess.HlsVideoConversion(controller.BufChan)
 
+	pool := websock.NewPool()
+
+	go pool.Start()
+
 	defer func() {
 		close(controller.BufChan)
 	}()
@@ -56,7 +62,9 @@ func main() {
 	r.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
 	r.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
 	r.POST("/uploadVideoContent", controller.VideoUploadHandler)
-	r.GET("/ws", controller.Notification)
+	r.GET("/ws", func(w http.ResponseWriter, r *http.Request) {
+		controller.ServeWs(pool, w, r)
+	})
 	r.GET("/getRoutes", controller.GetAllRoutes)
 	r.GET("/getQuestions", controller.GetQuestions)
 	r.GET("/getVideos", controller.GetVideos)

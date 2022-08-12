@@ -330,17 +330,7 @@ func QuestionsUploadHandler(c *gin.Context) {
 
 }
 
-func Notification(c *gin.Context) {
-
-	pool := websock.NewPool()
-
-	go pool.Start()
-
-	serveWs(pool, c.Writer, c.Request)
-
-}
-
-func serveWs(pool *websock.Pool, w http.ResponseWriter, r *http.Request) {
+func ServeWs(pool *websock.Pool, w http.ResponseWriter, r *http.Request) {
 	log.Println("WebSocket Endpoint Hit")
 
 	var details websock.Details
@@ -363,8 +353,9 @@ func serveWs(pool *websock.Pool, w http.ResponseWriter, r *http.Request) {
 		Details: &details,
 	}
 
+	go client.Read()
+
 	pool.Register <- client
-	client.Read()
 }
 
 func GetQuestions(c *gin.Context) {
