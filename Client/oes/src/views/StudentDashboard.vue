@@ -14,11 +14,12 @@ export default {
   },
   methods: {
     mutateData(data) {
-      console.log("18", data);
-      let dataBody = data.body;
-      if (data.type == 1) {
+      let parsedData = JSON.parse(data);
+      let dataBody = parsedData.body;
+
+      if (parsedData.type == 1) {
         this.$store.commit("setNotification", dataBody);
-        alert(JSON.parse(dataBody));
+        alert(dataBody);
       } else if (data.type == 2) {
         this.$store.commit("setChat", dataBody);
       } else {
