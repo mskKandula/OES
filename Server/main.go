@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/gin-contrib/static"
@@ -62,8 +61,8 @@ func main() {
 	r.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
 	r.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
 	r.POST("/uploadVideoContent", controller.VideoUploadHandler)
-	r.GET("/ws", func(w http.ResponseWriter, r *http.Request) {
-		controller.ServeWs(pool, w, r)
+	r.GET("/ws", func(c *gin.Context) {
+		controller.ServeWs(pool, c.Writer, c.Request)
 	})
 	r.GET("/getRoutes", controller.GetAllRoutes)
 	r.GET("/getQuestions", controller.GetQuestions)

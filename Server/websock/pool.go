@@ -2,6 +2,7 @@ package websock
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 
@@ -72,7 +73,12 @@ func (pool *Pool) Start() {
 
 // Redis Publish message functionality
 func (pool *Pool) publishMessage(msg Message) {
-	err := config.Redis.Publish(ctx, PubSubGeneralChannel, msg).Err()
+	payload, err := json.Marshal(msg)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	err = config.Redis.Publish(ctx, PubSubGeneralChannel, payload).Err()
 
 	if err != nil {
 		log.Println(err)
@@ -85,11 +91,18 @@ func (pool *Pool) listenPubSubChannel() {
 
 	pubsub := config.Redis.Subscribe(ctx, PubSubGeneralChannel)
 
+	msg := Message{}
+
 	ch := pubsub.Channel()
 
-	for msg := range ch {
+	for data := range ch {
 
 		fmt.Println("Sending message to all clients in Pool")
+
+		if err := json.Unmarshal([]byte(data.Payload), &msg); err != nil {
+			log.Println(err)
+			return
+		}
 
 		for _, client := range pool.Clients[msg.Id] {
 
