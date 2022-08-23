@@ -1,14 +1,16 @@
 package middleware
 
 import (
+	"net/http"
 	"os"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
+	"github.com/gin-gonic/gin"
 	"github.com/mskKandula/model"
 )
 
-func Auth(creds model.UserLogin, id int) (string, time.Time, error) {
+func GenerateJWT(creds model.UserLogin, id int) (string, time.Time, error) {
 
 	var err error
 
@@ -41,7 +43,7 @@ func Auth(creds model.UserLogin, id int) (string, time.Time, error) {
 
 }
 
-func Decode(tokenString string) (interface{}, error) {
+func ValidateToken(tokenString string) (interface{}, error) {
 
 	// Initialize a new instance of `Claims`
 	claims := jwt.MapClaims{}
@@ -67,4 +69,41 @@ func Decode(tokenString string) (interface{}, error) {
 	id := claims["id"]
 
 	return id, nil
+}
+
+func Auth() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cookie, err := c.Request.Cookie("token")
+
+		if err != nil {
+			if err == http.ErrNoCookie {
+				// If the cookie is not set, return an unauthorized status
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				return
+			}
+			// For any other type of error, return a bad request status
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+
+			return
+		}
+
+		// Get the JWT string from the cookie
+		tokenString := cookie.Value
+
+		id, err := ValidateToken(tokenString)
+		if err != nil {
+			if err == jwt.ErrSignatureInvalid {
+				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				return
+			}
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		intId := int(id.(float64))
+
+		c.Set("userId", intId)
+
+		c.Next()
+	}
 }
