@@ -7,11 +7,11 @@ import (
 	"log"
 	"os"
 
-	"github.com/gin-contrib/static"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/mskKandula/config"
 	"github.com/mskKandula/controller"
+	"github.com/mskKandula/middleware"
 	"github.com/mskKandula/runningProcess"
 	"github.com/mskKandula/websock"
 )
@@ -54,24 +54,38 @@ func main() {
 
 	// fs := http.FileServer(http.Dir("../Client/oes/dist"))
 
-	r := gin.Default()
-	r.Use(static.Serve("/", static.LocalFile("../Client/oes/dist", false)))
-	r.POST("/signUp", controller.SignUp)
-	r.POST("/login", controller.Login)
-	r.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
-	r.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
-	r.POST("/uploadVideoContent", controller.VideoUploadHandler)
-	r.GET("/ws", func(c *gin.Context) {
-		controller.ServeWs(pool, c.Writer, c.Request)
-	})
-	r.GET("/getRoutes", controller.GetAllRoutes)
-	r.GET("/getQuestions", controller.GetQuestions)
-	r.GET("/getVideos", controller.GetVideos)
-	r.GET("/getStudents", controller.GetStudents)
-	r.GET("/downloadStudents", controller.DownloadStudents)
-	r.GET("/logOut", controller.Logout)
+	router := initRouter(pool)
 	// go func() {
 	// 	r.Run(":8081")
 	// }()
-	r.Run(":8080")
+	router.Run(":9000")
+}
+
+func initRouter(pool *websock.Pool) *gin.Engine {
+	r := gin.Default()
+	// r.Use(static.Serve("/", static.LocalFile("../Client/oes/dist", false)))
+	r.GET("/ws", func(c *gin.Context) {
+		controller.ServeWs(pool, c.Writer, c.Request)
+	})
+	open := r.Group("/o")
+	{
+		open.POST("/signUp", controller.SignUp)
+		open.POST("/login", controller.Login)
+	}
+
+	restricted := r.Group("/r").Use(middleware.Auth())
+	{
+		restricted.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
+		restricted.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
+		restricted.POST("/uploadVideoContent", controller.VideoUploadHandler)
+
+		restricted.GET("/getRoutes", controller.GetAllRoutes)
+		restricted.GET("/getQuestions", controller.GetQuestions)
+		restricted.GET("/getVideos", controller.GetVideos)
+		restricted.GET("/getStudents", controller.GetStudents)
+		restricted.GET("/downloadStudents", controller.DownloadStudents)
+		restricted.GET("/logOut", controller.Logout)
+	}
+
+	return r
 }

@@ -8,7 +8,7 @@ import (
 
 	"github.com/mskKandula/model"
 	"github.com/mskKandula/variables"
-	"gopkg.in/gomail.v2"
+	gomail "gopkg.in/gomail.v2"
 )
 
 func SendEmail(user model.BasicDetails) error {

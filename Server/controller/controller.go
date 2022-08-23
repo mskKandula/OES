@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/schema"
@@ -139,7 +138,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	tokenString, expiriesIn, err := middleware.Auth(userLogin, id)
+	tokenString, expiriesIn, err := middleware.GenerateJWT(userLogin, id)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -396,33 +395,7 @@ func Logout(c *gin.Context) {
 
 func GetAllRoutes(c *gin.Context) {
 
-	cookie, err := c.Request.Cookie("token")
-
-	if err != nil {
-		if err == http.ErrNoCookie {
-			// If the cookie is not set, return an unauthorized status
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			return
-		}
-		// For any other type of error, return a bad request status
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-
-		return
-	}
-
-	// Get the JWT string from the cookie
-	tokenString := cookie.Value
-
-	id, err := middleware.Decode(tokenString)
-	intId := int(id.(float64))
-	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			return
-		}
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
+	userId := c.GetInt("userId")
 
 	var routes []model.Route
 
@@ -445,7 +418,7 @@ func GetAllRoutes(c *gin.Context) {
 	rows, err := Db.Query(`SELECT m.id,m.name,m.url,m.description FROM UserRole ur
 	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
 	INNER JOIN menu m ON rm.menuId = m.id
-	where ur.userId=?`, intId)
+	where ur.userId=?`, userId)
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
