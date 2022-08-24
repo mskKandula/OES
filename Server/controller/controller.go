@@ -148,6 +148,7 @@ func Login(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:    "token",
 		Value:   tokenString,
+		Path:    "/",
 		Expires: expiriesIn,
 	})
 
@@ -389,6 +390,7 @@ func Logout(c *gin.Context) {
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:   "token",
 		MaxAge: -1,
+		Path:   "/",
 	})
 
 }

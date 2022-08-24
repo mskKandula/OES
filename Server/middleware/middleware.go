@@ -79,6 +79,7 @@ func Auth() gin.HandlerFunc {
 			if err == http.ErrNoCookie {
 				// If the cookie is not set, return an unauthorized status
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				c.Abort()
 				return
 			}
 			// For any other type of error, return a bad request status
@@ -94,6 +95,7 @@ func Auth() gin.HandlerFunc {
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+				c.Abort()
 				return
 			}
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
