@@ -72,7 +72,7 @@ export default {
           Make the request to the POST /single-file URL
         */
       this.$http
-        .post("/api/multipleStudentsRegistration", formData, {
+        .post("/api/r/multipleStudentsRegistration", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },

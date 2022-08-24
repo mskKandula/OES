@@ -25,7 +25,7 @@ export default {
     getVideos() {
       let self = this;
       this.$http
-        .get("/api/getVideos")
+        .get("/api/r/getVideos")
         .then(function (res) {
           if (res.data) {
             self.videosList = res.data.videos;

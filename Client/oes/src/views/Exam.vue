@@ -148,7 +148,7 @@ export default {
     getQues() {
       let self = this;
       this.$http
-        .get("/api/getQuestions")
+        .get("/api/r/getQuestions")
         .then(function (res) {
           if (res.data) {
             self.questions = res.data.questions;

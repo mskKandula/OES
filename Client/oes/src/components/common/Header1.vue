@@ -174,7 +174,7 @@ export default {
     getRoutes() {
       let self = this;
       this.$http
-        .get("/api/getRoutes")
+        .get("/api/r/getRoutes")
         .then(function (res) {
           if (res.data) {
             self.routes = res.data.routes;
@@ -191,7 +191,7 @@ export default {
     logout() {
       let self = this;
       this.$http
-        .get("/api/logOut")
+        .get("/api/r/logOut")
         .then(function () {
           self.$router.push("/");
         })

@@ -595,7 +595,7 @@ export default {
     register() {
       let self = this;
       this.$http
-        .post("/api/signUp", self.details)
+        .post("/api/o/signUp", self.details)
         .then(function (res) {
           console.log(res);
           self.$bvToast.toast(`Registered successfully`, {

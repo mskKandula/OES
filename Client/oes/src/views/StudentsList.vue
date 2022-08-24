@@ -29,7 +29,7 @@ export default {
     getstudents() {
       let self = this;
       this.$http
-        .get("/api/getStudents")
+        .get("/api/r/getStudents")
         .then(function (res) {
           if (res.data) {
             console.log("38", res);
