@@ -43,7 +43,6 @@
 // import Vue from 'vue';
 import vue2Dropzone from "vue2-dropzone";
 import "vue2-dropzone/dist/vue2Dropzone.min.css";
-import axios from "axios";
 import XLSX from "xlsx";
 export default {
   components: { vueDropzone: vue2Dropzone },
@@ -72,8 +71,8 @@ export default {
       /*
           Make the request to the POST /single-file URL
         */
-      axios
-        .post("/multipleStudentsRegistration", formData, {
+      this.$http
+        .post("/api/multipleStudentsRegistration", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },

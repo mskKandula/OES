@@ -20,7 +20,7 @@ export default {
       if (parsedData.type == 1) {
         this.$store.commit("setNotification", dataBody);
         alert(dataBody);
-      } else if (data.type == 2) {
+      } else if (parsedData.type == 2) {
         this.$store.commit("setChat", dataBody);
       } else {
         this.$store.commit("setWhiteBoard", dataBody);
@@ -33,7 +33,7 @@ export default {
     if (onlyOnce) {
       // let roleName = this.$store.getters.getUserRole
       // let clientId = this.$store.getters.getClientId
-      const url = new URL("ws://localhost:8080/ws");
+      const url = new URL("ws://localhost:9000/ws");
       url.searchParams.append("role", "Student");
       url.searchParams.append("id", "6666");
 

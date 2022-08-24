@@ -63,7 +63,6 @@
 // import questionsData from "./questions.json";
 import SimpleKeyboard from "./SimpleKeyboard";
 import "./App.css";
-import axios from "axios";
 export default {
   components: {
     SimpleKeyboard,
@@ -148,8 +147,8 @@ export default {
     },
     getQues() {
       let self = this;
-      axios
-        .get("/getQuestions")
+      this.$http
+        .get("/api/getQuestions")
         .then(function (res) {
           if (res.data) {
             self.questions = res.data.questions;

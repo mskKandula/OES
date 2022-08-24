@@ -237,7 +237,7 @@
             type="text"
             id="exampleInputPhoneNo"
             class="form-control"
-            v-model="details.phoneNo"
+            v-model="details.mobileNo"
           />
         </div>
         <div class="form-group">
@@ -557,7 +557,6 @@
 
 <script>
 import Vue from "vue";
-import axios from "axios";
 // import Response from "@/plugins/response.js";
 // import "swiper/dist/css/swiper.css";
 import { swiper, swiperSlide } from "vue-awesome-swiper";
@@ -595,10 +594,10 @@ export default {
   methods: {
     register() {
       let self = this;
-      axios
-        .post("/signUp", self.details)
+      this.$http
+        .post("/api/signUp", self.details)
         .then(function (res) {
-          console.log(res)
+          console.log(res);
           self.$bvToast.toast(`Registered successfully`, {
             title: "Success",
             variant: "success",
@@ -613,18 +612,18 @@ export default {
     },
     login() {
       let self = this;
-      axios
-        .post("/login", self.log, {
+      this.$http
+        .post("/api/o/login", self.log, {
           headers: {
             "Content-Type": "text/plain",
           },
         })
         .then(function (res) {
           if (res.data) {
-            if (res.data.userType === "User"){
-            self.$router.push({path:"/dashboard"});
-            }else{
-              self.$router.push({path:"/studentDashboard"})
+            if (res.data.userType === "User") {
+              self.$router.push({ path: "/dashboard" });
+            } else {
+              self.$router.push({ path: "/studentDashboard" });
             }
           }
         })

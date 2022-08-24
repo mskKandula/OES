@@ -31,7 +31,6 @@
 // import Vue from 'vue';
 import vue2Dropzone from "vue2-dropzone";
 import "vue2-dropzone/dist/vue2Dropzone.min.css";
-import axios from "axios";
 export default {
   components: { vueDropzone: vue2Dropzone },
   data() {
@@ -58,8 +57,8 @@ export default {
       /*
           Make the request to the POST /single-file URL
         */
-      axios
-        .post("/uploadVideoContent", formData, {
+      this.$http
+        .post("/api/uploadVideoContent", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -83,7 +82,6 @@ export default {
               solid: true,
               class: "toast",
             });
-
           }
         })
         .catch(function () {

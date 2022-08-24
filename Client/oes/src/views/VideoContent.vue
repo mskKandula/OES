@@ -1,55 +1,58 @@
 <template>
   <div class="main-content">
-    
-<h2 class="mb-3">Videos List</h2>
+    <h2 class="mb-3">Videos List</h2>
 
-<span v-for="(vid,index) in this.videosList"
-  :key="index"> 
-  <img class="col-md-3" :src="'http://127.0.0.1:8887/'+ vid.thumbnailPath" :alt="vid.description" width="300" height="300" @click="playVideo(vid.videoUrl)">
-  </span>
+    <span v-for="(vid, index) in this.videosList" :key="index">
+      <img
+        class="col-md-3"
+        :src="'http://127.0.0.1:8887/' + vid.thumbnailPath"
+        :alt="vid.description"
+        width="300"
+        height="300"
+        @click="playVideo(vid.videoUrl)"
+      />
+    </span>
   </div>
 </template>
 <script>
-import axios from "axios";
-
 export default {
   data() {
     return {
-      videosList: []
+      videosList: [],
     };
   },
-  methods:{
-     getVideos(){
-       let self = this
-       axios
-        .get("/getVideos")
-        .then(function(res) {
+  methods: {
+    getVideos() {
+      let self = this;
+      this.$http
+        .get("/api/getVideos")
+        .then(function (res) {
           if (res.data) {
             self.videosList = res.data.videos;
           }
         })
-        .catch(function() {
+        .catch(function () {
           console.log("FAILURE!!");
         });
-     },
-     playVideo(url) {
-      this.$router.push({  name: 'VideoPlay', params: { videoUrl : url } })
-     }
-     },
- mounted() {
-     this.getVideos();
-}
-}
+    },
+    playVideo(url) {
+      this.$router.push({ name: "VideoPlay", params: { videoUrl: url } });
+    },
+  },
+  mounted() {
+    this.getVideos();
+  },
+};
 </script>
 <style lang="scss">
-
 table {
   font-family: arial, sans-serif;
   border-collapse: collapse;
   width: 100%;
 }
 
-td, th {
+td,
+th {
   border: 1px solid #dddddd;
   text-align: left;
   padding: 8px;
@@ -58,5 +61,4 @@ td, th {
 tr:nth-child(even) {
   background-color: #dddddd;
 }
-
 </style>

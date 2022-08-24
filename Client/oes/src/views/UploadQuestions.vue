@@ -31,8 +31,7 @@
 // import Vue from 'vue';
 import vue2Dropzone from "vue2-dropzone";
 import "vue2-dropzone/dist/vue2Dropzone.min.css";
-import axios from "axios";
-import { mapGetters } from 'vuex'
+import { mapGetters } from "vuex";
 export default {
   components: { vueDropzone: vue2Dropzone },
   data() {
@@ -59,8 +58,8 @@ export default {
       /*
           Make the request to the POST /single-file URL
         */
-      axios
-        .post("/uploadQuestionFile", formData, {
+      this.$http
+        .post("/api/uploadQuestionFile", formData, {
           headers: {
             "Content-Type": "multipart/form-data",
           },
@@ -68,7 +67,7 @@ export default {
         .then(function (res) {
           self.$refs.myVueDropzone.removeFile(file);
           if (res.data) {
-            self.notifyStudents()
+            self.notifyStudents();
             self.$bvToast.toast(`Imported Successfully`, {
               title: "Success",
               variant: "success",
@@ -85,7 +84,6 @@ export default {
               solid: true,
               class: "toast",
             });
-
           }
         })
         .catch(function () {
@@ -100,18 +98,21 @@ export default {
           console.log("FAILURE!!");
         });
     },
-    notifyStudents(){
-      this.socketConn.send(JSON.stringify({
-        type: 1,
-        body: "Exam has started, Please check",
-        id : "6666" }))
-    }
+    notifyStudents() {
+      this.socketConn.send(
+        JSON.stringify({
+          type: 1,
+          body: "Exam has started, Please check",
+          id: "6666",
+        })
+      );
+    },
   },
-  computed:{
+  computed: {
     ...mapGetters({
-      socketConn: 'getConn'
+      socketConn: "getConn",
     }),
-  }
+  },
 };
 </script>
 

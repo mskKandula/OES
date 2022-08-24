@@ -14,6 +14,8 @@ import "../node_modules/vue-multiselect/dist/vue-multiselect.min.css";
 import "./assets/plugins/materialdesignicons/css/materialdesignicons.min.css";
 // import "swiper/dist/css/swiper.css";
 import "./assets/scss/template.scss";
+import Axios from "axios";
+
 
 const go = new Go()
 WebAssembly.instantiateStreaming(
@@ -25,12 +27,14 @@ WebAssembly.instantiateStreaming(
     countser : this.countWords,
   }
 })
+Vue.prototype.$http = Axios;
 
 Vue.config.productionTip = false;
 // Install BootstrapVue
 Vue.use(BootstrapVue);
 Vue.use(VueAwesomeSwiper);
 Vue.use(VueCookies);
+
 new Vue({
   router,
   store,

@@ -15,7 +15,13 @@
           </div>
 
           <div
-            class="col-6 text-right d-flex justify-content-end align-items-center"
+            class="
+              col-6
+              text-right
+              d-flex
+              justify-content-end
+              align-items-center
+            "
           >
             <div class="notification-dropdown">
               <b-button variant="link" to="/notification" class="btn">
@@ -82,9 +88,8 @@
         </div>
       </div>
 
-       <div>
-        <ul
-        >
+      <div>
+        <ul>
           <NestetedMainMenus
             v-for="(node, index) in menulist"
             :key="index"
@@ -94,7 +99,7 @@
             :disabled-link="forceToChange"
           />
         </ul>
-        </div>
+      </div>
       <!-- top navigation -->
       <!-- <div class="navigation">
         <div class="row no-gutters">
@@ -152,31 +157,30 @@
 </template>
 <script>
 // import Vue from "vue";
-import NestetedMainMenus from '../ui/NestetedMainMenus'
-import axios from "axios";
+import NestetedMainMenus from "../ui/NestetedMainMenus";
 // import lodashOrderBy from 'lodash/orderBy'
 
 export default {
   name: "Header1",
   components: {
-    NestetedMainMenus
+    NestetedMainMenus,
   },
   data() {
     return {
-      routes: []
+      routes: [],
     };
   },
   methods: {
     getRoutes() {
       let self = this;
-      axios
-        .get("/getRoutes")
-        .then(function(res) {
+      this.$http
+        .get("/api/getRoutes")
+        .then(function (res) {
           if (res.data) {
             self.routes = res.data.routes;
           }
         })
-        .catch(function() {
+        .catch(function () {
           console.log("FAILURE!!");
         });
     },
@@ -186,12 +190,12 @@ export default {
     },
     logout() {
       let self = this;
-      axios
-        .get("/logOut")
-        .then(function() {
+      this.$http
+        .get("/api/logOut")
+        .then(function () {
           self.$router.push("/");
         })
-        .catch(function() {
+        .catch(function () {
           console.log("FAILURE!!");
         });
     },
@@ -211,30 +215,30 @@ export default {
   created() {
     this.getRoutes();
   },
-   computed: {
-      menuList () {
-         let fields = [
+  computed: {
+    menuList() {
+      let fields = [
+        {
+          label: "Charts",
+          url: "",
+          openInNewTab: false,
+          nodes: [
             {
-            label: 'Charts',
-            url: '',
-            openInNewTab: false,
-            nodes: [
-              {
-                label: 'Bar',
-                url: '/bar',
-                openInNewTab: false,
-              },
-              {
-                label: 'Line',
-                url: "/line",
-                openInNewTab: false
-              }
-            ]
-          },
-         ]
-         return fields
-      }
-}
+              label: "Bar",
+              url: "/bar",
+              openInNewTab: false,
+            },
+            {
+              label: "Line",
+              url: "/line",
+              openInNewTab: false,
+            },
+          ],
+        },
+      ];
+      return fields;
+    },
+  },
 };
 </script>
 
