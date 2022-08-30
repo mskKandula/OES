@@ -9,7 +9,8 @@ export default new Vuex.Store({
     wsConn: "",
     notificationData:"",
     chatData:"",
-    whiteBoardData:""
+    whiteBoardData:"",
+    notificationCount:0
   },
   mutations: {
     setConn (state, data) {
@@ -27,6 +28,13 @@ export default new Vuex.Store({
     setWhiteBoard(state,data){
       state.whiteBoardData=data
     },
+    setNotificationCount(state,data){
+      if (data ===0){
+        state.notificationCount = data
+      }else{
+      state.notificationCount += data
+      }
+    }
   },
   actions: {
   },
@@ -35,7 +43,8 @@ export default new Vuex.Store({
     getOnce: (state) => state.onceFlag,
     getNotification: (state) => state.notificationData,
     getChat: (state) => state.chatData,
-    getWhiteBoard: (state) => state.whiteBoardData
+    getWhiteBoard: (state) => state.whiteBoardData,
+    getNotificationCount: (state) => state.notificationCount,
   },
   modules: {
   }

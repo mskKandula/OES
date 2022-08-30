@@ -26,7 +26,9 @@
             <div class="notification-dropdown">
               <b-button variant="link" to="/notification" class="btn">
                 <span class="mdi mdi-bell-outline notification-icon" />
-                <span class="notification-count">1</span>
+                <span class="notification-count" v-if="notificationCount > 0">{{
+                  notificationCount
+                }}</span>
               </b-button>
             </div>
             <!-- <b-dropdown class="notification-dropdown header-dropdown mr-3">
@@ -78,7 +80,7 @@
                     :key="index"
                     @click="goTo(route)"
                   >
-                    <span class="mdi mdi-chart-bell-curve list-icon" />
+                    <span :class="icons[index]" />
                     {{ route.name }}
                   </b-nav-item>
                 </b-navbar-nav>
@@ -158,6 +160,8 @@
 <script>
 // import Vue from "vue";
 import NestetedMainMenus from "../ui/NestetedMainMenus";
+import { mapGetters } from "vuex";
+
 // import lodashOrderBy from 'lodash/orderBy'
 
 export default {
@@ -168,6 +172,14 @@ export default {
   data() {
     return {
       routes: [],
+      icons: [
+        "mdi mdi-chart-bell-curve list-icon",
+        "mdi mdi-account-plus list-icon",
+        "mdi mdi-format-list-bulleted list-icon",
+        "mdi mdi-file-upload list-icon",
+        "mdi mdi-video-plus list-icon",
+        "mdi mdi-monitor-dashboard list-icon",
+      ],
     };
   },
   methods: {
@@ -238,6 +250,9 @@ export default {
       ];
       return fields;
     },
+    ...mapGetters({
+      notificationCount: "getNotificationCount",
+    }),
   },
 };
 </script>

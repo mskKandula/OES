@@ -19,17 +19,16 @@ export default {
 
       if (parsedData.type == 1) {
         this.$store.commit("setNotification", dataBody);
-        alert(dataBody);
       } else if (parsedData.type == 2) {
         this.$store.commit("setChat", dataBody);
       } else {
         this.$store.commit("setWhiteBoard", dataBody);
       }
+      this.$store.commit("setNotificationCount", 1);
     },
   },
   created() {
     const onlyOnce = this.$store.getters.getOnce;
-    console.log("21", onlyOnce);
     if (onlyOnce) {
       // let roleName = this.$store.getters.getUserRole
       // let clientId = this.$store.getters.getClientId
