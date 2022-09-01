@@ -624,3 +624,42 @@ func GetVideos(c *gin.Context) {
 	}
 	c.JSON(http.StatusOK, gin.H{"videos": videos})
 }
+
+func ExamProofHandler(c *gin.Context) {
+
+	file, handler, err := c.Request.FormFile("zipFile")
+
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer file.Close()
+
+	if strings.Split(handler.Filename, ".")[1] != "zip" {
+		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
+		return
+	}
+
+	path := "../media/video/examProofs/" + handler.Filename
+
+	// FilePath Creation
+	dstFile, err := create(path)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	_, err = io.Copy(dstFile, file)
+
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer dstFile.Close()
+
+	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
+
+}
