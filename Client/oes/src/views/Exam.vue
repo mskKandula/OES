@@ -56,6 +56,15 @@
       @onKeyPress="onKeyPress"
       :input="input"
     />
+    <canvas id="canvas" hidden></canvas>
+    <video
+      class="center"
+      height="500px"
+      controls
+      autoplay
+      id="video"
+      hidden
+    ></video>
   </div>
 </template>
 
@@ -80,6 +89,18 @@ export default {
       test: "",
       current: "",
       res: "",
+      displayOptions: {
+        video: {
+          cursor: "always",
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          sampleRate: 44100,
+        },
+      },
+      videoTrack: null,
+      blobsArray: [],
     };
   },
   methods: {
@@ -158,8 +179,68 @@ export default {
           console.log("FAILURE!!");
         });
     },
+    async getStream() {
+      const self = this;
+      navigator.mediaDevices
+        // Uncomment below line to capture screen
+        // .getUserMedia(self.displayOptions)
+        .getUserMedia(self.displayOptions)
+        .then(async (stream) => {
+          let vid = document.getElementById("video");
+          vid.srcObject = stream;
+
+          // Grab frame from stream
+          self.videoTrack = stream.getVideoTracks()[0];
+
+          // self.getscShot();
+          for (let i = 0; i < 10; i++) {
+            self.captureImage();
+            await new Promise((r) => setTimeout(r, 5000));
+          }
+        })
+
+        .catch((e) => console.log(e));
+    },
+    captureImage() {
+      const self = this;
+      self.imageCapture = new ImageCapture(self.videoTrack);
+      self.imageCapture.grabFrame().then((bitmap) => {
+        // Stop sharing
+        // track.stop();
+        let canvas = document.getElementById("canvas");
+        // Draw the bitmap to canvas
+        canvas.width = bitmap.width;
+        canvas.height = bitmap.height;
+        canvas.getContext("2d").drawImage(bitmap, 0, 0);
+
+        // Grab blob from canvas
+        canvas.toBlob((blob) => {
+          // Do things with blob here
+          blob.name = `screenshot-${new Date().getTime()}.png`;
+
+          self.blobsArray.push(blob);
+
+          // To Display on Screen
+          // let image = document.createElement("img");
+          // image.setAttribute("style", "width: 150px; height: 150px;");
+          //image.height="15px"
+          // let url = window.URL.createObjectURL(blob);
+          // image.src = url;
+          // document.body.appendChild(image);
+
+          // To Download the images
+          //  let a = document.createElement("a");
+          // let url = window.URL.createObjectURL(blob);
+          // a.href = url;
+          // a.download = blob.name;
+          // a.click();
+          //  window.URL.revokeObjectURL(url);
+        });
+      });
+    },
   },
   mounted() {
+    this.getStream();
     this.getQues();
   },
 };
