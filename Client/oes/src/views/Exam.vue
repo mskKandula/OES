@@ -72,6 +72,7 @@
 // import questionsData from "./questions.json";
 import SimpleKeyboard from "./SimpleKeyboard";
 import "./App.css";
+import JSZip from "jszip";
 export default {
   components: {
     SimpleKeyboard,
@@ -101,6 +102,7 @@ export default {
       },
       videoTrack: null,
       blobsArray: [],
+      new_zip: null,
     };
   },
   methods: {
@@ -197,6 +199,8 @@ export default {
             self.captureImage();
             await new Promise((r) => setTimeout(r, 5000));
           }
+
+          self.uploadZip();
         })
 
         .catch((e) => console.log(e));
@@ -238,8 +242,50 @@ export default {
         });
       });
     },
+    uploadZip() {
+      const self = this;
+      for (let i = 0; i < self.blobsArray.length; i++) {
+        self.new_zip.file(self.blobsArray[i].name, self.blobsArray[i], {
+          binary: true,
+        });
+      }
+      self.new_zip
+        .generateAsync({
+          type: "blob",
+        })
+        .then(function (content) {
+          // To download a Zip File
+          // var a = document.createElement("a");
+          // let url = window.URL.createObjectURL(content);
+          // a.href = url;
+          // a.download = "img_archives.zip";
+          // a.click();
+          // window.URL.revokeObjectURL(url);
+
+          //generated zip content to file type
+          var files = new File([content], "studentImgCapture.zip");
+
+          var formData = new FormData();
+          formData.append("zipFile", files);
+
+          self.$http
+            .post("/api/r/uploadExamProof", formData, {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            })
+            .then(function (res) {
+              console.log(res);
+              self.blobsArray = [];
+            })
+            .catch(function (e) {
+              console.log("Failed to upload", e);
+            });
+        });
+    },
   },
   mounted() {
+    this.new_zip = new JSZip();
     this.getStream();
     this.getQues();
   },
