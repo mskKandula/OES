@@ -552,10 +552,12 @@ func VideoUploadHandler(c *gin.Context) {
 		return
 	}
 
-	path := "../media/video/" + paths[0] + "/" + handler.Filename
+	imageName := paths[0] + ".png"
 
-	m3u8Path := "media/video/" + paths[0] + "/" + "index.m3u8"
-	imagePath := "media/video/" + paths[0] + "/" + paths[0] + ".png"
+	path := filepath.Join("../media/video", paths[0], handler.Filename)
+
+	m3u8Path := filepath.Join("media/video", paths[0], "index.m3u8")
+	imagePath := filepath.Join("media/video", paths[0], imageName)
 
 	// FilePath Creation
 	dstFile, err := create(path)
@@ -641,7 +643,7 @@ func ExamProofHandler(c *gin.Context) {
 		return
 	}
 
-	path := "../media/video/examProofs/" + handler.Filename
+	path := filepath.Join("../media/video/examProofs", handler.Filename)
 
 	// FilePath Creation
 	dstFile, err := create(path)
