@@ -65,9 +65,9 @@ func main() {
 	// router.Run(":9000")
 
 	s := &http.Server{
-		Addr:           ":8080",
+		Addr:           ":9000",
 		Handler:        router,
-		ReadTimeout:    10 * time.Second,
+		ReadTimeout:    5 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
 	}
