@@ -46,7 +46,7 @@ INSERT INTO Menu(name,url,description) VALUES
 ('Uploadquestions','/uploadQuestions','Uploadquestions'),
 ('UploadVideo','/uploadVideo','UploadVideo'),
 ('StudentDashboard','/studentDashboard','StudentDashboard'),('Exam','/onlineExam','Exam'),
-('VideoContent','/fetchVideos','VideoContent');
+('VideoContent','/fetchVideos','VideoContent'),('WhiteBoard','/whiteBoard','WhiteBoard');
 
 select * from menu;
 
@@ -76,9 +76,9 @@ CREATE TABLE RoleMenu (
     menuId int NOT NULL
 );
 
-INSERT INTO roleMenu(roleId,menuId) VALUES(2,6),(2,7),(2,8);
+INSERT INTO roleMenu(roleId,menuId) VALUES(2,6),(2,7),(2,8),(2,9);
 
-INSERT INTO roleMenu(roleId,menuId) VALUES(1,1),(1,2),(1,3),(1,4),(1,5);
+INSERT INTO roleMenu(roleId,menuId) VALUES(1,1),(1,2),(1,3),(1,4),(1,5),(1,9);
 
 select * from roleMenu;
 

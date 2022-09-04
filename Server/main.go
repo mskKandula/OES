@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
@@ -26,6 +28,8 @@ func init() {
 	if err != nil {
 		log.Fatalf("Connection Failed to Open: %v", err.Error())
 	}
+
+	// sudo service redis-server start
 
 	// Create Redis Client
 	config.CreateRedisClient()
@@ -58,7 +62,16 @@ func main() {
 	// go func() {
 	// 	r.Run(":8081")
 	// }()
-	router.Run(":9000")
+	// router.Run(":9000")
+
+	s := &http.Server{
+		Addr:           ":8080",
+		Handler:        router,
+		ReadTimeout:    10 * time.Second,
+		WriteTimeout:   10 * time.Second,
+		MaxHeaderBytes: 1 << 20,
+	}
+	s.ListenAndServe()
 }
 
 func initRouter(pool *websock.Pool) *gin.Engine {
@@ -78,6 +91,7 @@ func initRouter(pool *websock.Pool) *gin.Engine {
 		restricted.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
 		restricted.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
 		restricted.POST("/uploadVideoContent", controller.VideoUploadHandler)
+		restricted.POST("/uploadExamProof", controller.ExamProofHandler)
 
 		restricted.GET("/getRoutes", controller.GetAllRoutes)
 		restricted.GET("/getQuestions", controller.GetQuestions)
