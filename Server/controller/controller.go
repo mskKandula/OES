@@ -6,10 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -157,26 +155,36 @@ func Login(c *gin.Context) {
 
 func StudentsRegisterHandler(c *gin.Context) {
 
-	file, handler, err := c.Request.FormFile("myFile")
+	// file, handler, err := c.Request.FormFile("myFile")
+
+	file, err := c.FormFile("myFile")
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	defer file.Close()
+	// defer file.Close()
 
-	if strings.Split(handler.Filename, ".")[1] != "xlsx" {
+	if strings.Split(file.Filename, ".")[1] != "xlsx" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
 
-	if handler.Size > 10*1024 {
+	if file.Size > 10*1024 {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "File size is big"})
 		return
 	}
 
-	fileBytes, err := ioutil.ReadAll(file)
+	fileData, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer fileData.Close()
+
+	fileBytes, err := io.ReadAll(fileData)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -262,21 +270,15 @@ func excelToJson(fileBytes []byte) ([]gjson.Result, error) {
 
 			row, _ := sheet.Row(rowIndex)
 
-			allKeys := []string{}
-
-			for _, v := range requiredKeys {
-				allKeys = append(allKeys, v)
-			}
-
 			values := []interface{}{}
 
-			for i := 0; i < len(allKeys); i++ {
+			for i := 0; i < len(requiredKeys); i++ {
 
 				values = append(values, strings.TrimSpace(row.GetCell(i).String()))
 
 			}
 
-			arr := prepareResult(allKeys, values)
+			arr := prepareResult(requiredKeys, values)
 
 			data = append(data, arr)
 		}
@@ -296,19 +298,19 @@ func prepareResult(keys []string, vals []interface{}) gjson.Result {
 
 func QuestionsUploadHandler(c *gin.Context) {
 
-	file, handler, err := c.Request.FormFile("myFile")
+	file, err := c.FormFile("myFile")
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	if strings.Split(handler.Filename, ".")[1] != "txt" {
+	if strings.Split(file.Filename, ".")[1] != "txt" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
 
-	if handler.Size > 10*1024 {
+	if file.Size > 10*1024 {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "File size is big"})
 		return
 	}
@@ -318,7 +320,16 @@ func QuestionsUploadHandler(c *gin.Context) {
 	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	// 	return
 	// }
-	fileScanner := bufio.NewScanner(file)
+
+	fileData, err := file.Open()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	defer fileData.Close()
+
+	fileScanner := bufio.NewScanner(fileData)
 
 	fileScanner.Split(bufio.ScanLines)
 
@@ -529,16 +540,17 @@ func generateExcel(studentListResult []map[string]interface{}, SheetName string)
 }
 
 func VideoUploadHandler(c *gin.Context) {
-	file, handler, err := c.Request.FormFile("videoFile")
+	// file, handler, err := c.Request.FormFile("videoFile")
+
+	file, err := c.FormFile("videoFile")
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// defer file.Close()
 
-	defer file.Close()
-
-	paths := strings.Split(handler.Filename, ".")
+	paths := strings.Split(file.Filename, ".")
 
 	// checking the File Type, if not mp4 return
 	if paths[1] != "mp4" {
@@ -547,34 +559,37 @@ func VideoUploadHandler(c *gin.Context) {
 	}
 
 	// checking the File Size, if more than 10mb return
-	if handler.Size > 10*1024*1024 {
+	if file.Size > 10*1024*1024 {
 		c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "File size is big"})
 		return
 	}
 
 	imageName := paths[0] + ".png"
 
-	path := filepath.Join("../media/video", paths[0], handler.Filename)
+	dstPath := filepath.Join("../media/video", paths[0], file.Filename)
 
 	m3u8Path := filepath.Join("media/video", paths[0], "index.m3u8")
 	imagePath := filepath.Join("media/video", paths[0], imageName)
 
 	// FilePath Creation
-	dstFile, err := create(path)
+	// dstFile, err := create(path)
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
 
-	_, err = io.Copy(dstFile, file)
+	// _, err = io.Copy(dstFile, file)
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
 
-	defer dstFile.Close()
+	// defer dstFile.Close()
+
+	// Upload the file to specific dst.
+	c.SaveUploadedFile(file, dstPath)
 
 	query, err := Db.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description) VALUES(?,?,?,?,?)")
 
@@ -590,19 +605,19 @@ func VideoUploadHandler(c *gin.Context) {
 		return
 	}
 
-	BufChan <- path
+	BufChan <- dstPath
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 
 }
 
 // file path creation
-func create(path string) (*os.File, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0770); err != nil {
-		return nil, err
-	}
-	return os.Create(path)
-}
+// func create(path string) (*os.File, error) {
+// 	if err := os.MkdirAll(filepath.Dir(path), 0770); err != nil {
+// 		return nil, err
+// 	}
+// 	return os.Create(path)
+// }
 
 func GetVideos(c *gin.Context) {
 	rows, err := Db.Query(`SELECT name, videoUrl,thumbnailPath,description from VideoContent`)
@@ -629,38 +644,22 @@ func GetVideos(c *gin.Context) {
 
 func ExamProofHandler(c *gin.Context) {
 
-	file, handler, err := c.Request.FormFile("zipFile")
+	file, err := c.FormFile("zipFile")
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	defer file.Close()
-
-	if strings.Split(handler.Filename, ".")[1] != "zip" {
+	if strings.Split(file.Filename, ".")[1] != "zip" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
 
-	path := filepath.Join("../media/video/examProofs", handler.Filename)
+	dstPath := filepath.Join("../media/examProofs", file.Filename)
 
-	// FilePath Creation
-	dstFile, err := create(path)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	_, err = io.Copy(dstFile, file)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	defer dstFile.Close()
+	// Upload the file to specific dst.
+	c.SaveUploadedFile(file, dstPath)
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 
