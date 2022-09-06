@@ -5,7 +5,7 @@
     <span v-for="(vid, index) in this.videosList" :key="index">
       <img
         class="col-md-3"
-        :src="'http://127.0.0.1:8887/' + vid.thumbnailPath"
+        :src="'/cdn' + vid.thumbnailPath"
         :alt="vid.description"
         width="300"
         height="300"

@@ -10,7 +10,15 @@ module.exports = {
                 pathRewrite: {
                     '^/api': ''
             }
+        },
+        '/cdn': {
+            target: 'http://localhost:8887/', // provide proxy  for your project
+            ws: true,
+            changeOrigin: true,
+            pathRewrite: {
+                '^/cdn': ''
         }
+    }
     }
 }
 }
