@@ -17,7 +17,7 @@ type Student struct {
 	Name     string `json:"name"`
 	Email    string `json:"email"`
 	Mobile   string `json:"mobile,omitempty"`
-	Password string `json:"password"`
+	Password string `json:"password,omitempty"`
 }
 
 type Route struct {

@@ -126,6 +126,14 @@ const routes = [
           title: "VideoCaptioning",
         },
       },
+      {
+        path: "/whiteBoard",
+        name: "WhiteBoard",
+        component: loadView("WhiteBoard"),
+        meta: {
+          title: "WhiteBoard",
+        },
+      },
     ],
   },
 ];
