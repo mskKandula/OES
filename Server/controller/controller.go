@@ -2,6 +2,7 @@ package controller
 
 import (
 	"bufio"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,10 +11,12 @@ import (
 	"net/http"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/schema"
+	"github.com/mskKandula/config"
 	"github.com/mskKandula/emailConfig"
 	"github.com/mskKandula/middleware"
 	"github.com/mskKandula/model"
@@ -30,7 +33,6 @@ var (
 	err           error
 	fileTextLines []string
 	students      []model.Student
-	videos        []model.Video
 	rowHeaders    []string
 	BufChan       = make(chan string, 10)
 
@@ -631,6 +633,24 @@ func VideoUploadHandler(c *gin.Context) {
 // }
 
 func GetVideos(c *gin.Context) {
+	var (
+		videos []model.Video
+		ctx    = context.Background()
+	)
+	const id string = "videoData"
+
+	val, err := config.Redis.Get(ctx, id).Bytes()
+
+	if err != nil {
+		log.Println(err)
+	} else {
+		if val != nil {
+			json.Unmarshal(val, &videos)
+			c.JSON(http.StatusOK, gin.H{"videos": videos, "from": "cache"})
+			return
+		}
+	}
+
 	rows, err := Db.Query(`SELECT name, videoUrl,thumbnailPath,description from VideoContent`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -638,7 +658,7 @@ func GetVideos(c *gin.Context) {
 	}
 
 	defer rows.Close()
-	videos = nil
+
 	for rows.Next() {
 		var video model.Video
 
@@ -650,6 +670,18 @@ func GetVideos(c *gin.Context) {
 		videos = append(videos, video)
 
 	}
+
+	json, err := json.Marshal(videos)
+
+	if err != nil {
+		log.Println(err)
+	} else {
+		err = config.Redis.Set(ctx, id, json, 15*time.Minute).Err()
+		if err != nil {
+			log.Println(err)
+		}
+	}
+
 	c.JSON(http.StatusOK, gin.H{"videos": videos})
 }
 
