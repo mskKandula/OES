@@ -80,25 +80,32 @@ func initRouter(pool *websock.Pool) *gin.Engine {
 	r.GET("/ws", func(c *gin.Context) {
 		controller.ServeWs(pool, c.Writer, c.Request)
 	})
+
 	open := r.Group("/o")
 	{
 		open.POST("/signUp", controller.SignUp)
 		open.POST("/login", controller.Login)
+
+		open.GET("/getRoutes", controller.GetAllRoutes)
+		open.GET("/logOut", controller.Logout)
 	}
 
-	restricted := r.Group("/r").Use(middleware.Auth())
+	user := r.Group("/r").Use(middleware.Auth("User"))
 	{
-		restricted.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
-		restricted.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
-		restricted.POST("/uploadVideoContent", controller.VideoUploadHandler)
-		restricted.POST("/uploadExamProof", controller.ExamProofHandler)
+		user.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
+		user.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
+		user.POST("/uploadVideoContent", controller.VideoUploadHandler)
 
-		restricted.GET("/getRoutes", controller.GetAllRoutes)
-		restricted.GET("/getQuestions", controller.GetQuestions)
-		restricted.GET("/getVideos", controller.GetVideos)
-		restricted.GET("/getStudents", controller.GetStudents)
-		restricted.GET("/downloadStudents", controller.DownloadStudents)
-		restricted.GET("/logOut", controller.Logout)
+		user.GET("/getStudents", controller.GetStudents)
+		user.GET("/downloadStudents", controller.DownloadStudents)
+	}
+
+	student := r.Group("/r").Use(middleware.Auth("Student"))
+	{
+		student.POST("/uploadExamProof", controller.ExamProofHandler)
+
+		student.GET("/getQuestions", controller.GetQuestions)
+		student.GET("/getVideos", controller.GetVideos)
 	}
 
 	return r

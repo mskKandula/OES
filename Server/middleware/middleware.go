@@ -46,7 +46,7 @@ func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.T
 
 }
 
-func ValidateToken(tokenString string) (interface{}, interface{}, error) {
+func ValidateToken(tokenString, role string) (interface{}, interface{}, error) {
 
 	// Initialize a new instance of `Claims`
 	claims := jwt.MapClaims{}
@@ -73,10 +73,14 @@ func ValidateToken(tokenString string) (interface{}, interface{}, error) {
 
 	userType := claims["userType"]
 
+	if userType.(string) != role {
+		return 0, "", errors.New("unauthorized to access this resource")
+	}
+
 	return id, userType, nil
 }
 
-func Auth() gin.HandlerFunc {
+func Auth(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		cookie, err := c.Request.Cookie("token")
 
@@ -96,7 +100,7 @@ func Auth() gin.HandlerFunc {
 		// Get the JWT string from the cookie
 		tokenString := cookie.Value
 
-		id, userType, err := ValidateToken(tokenString)
+		id, userType, err := ValidateToken(tokenString, role)
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -118,9 +122,9 @@ func Auth() gin.HandlerFunc {
 	}
 }
 
-func CheckUserType(role, userType string) error {
-	if role != userType {
-		return errors.New("Unauthorized to access this resource")
-	}
-	return nil
-}
+// func CheckUserType(role, userType string) error {
+// 	if role != userType {
+// 		return errors.New("Unauthorized to access this resource")
+// 	}
+// 	return nil
+// }
