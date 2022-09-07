@@ -376,6 +376,10 @@ func GetQuestions(c *gin.Context) {
 }
 
 func GetStudents(c *gin.Context) {
+	// if err := middleware.CheckUserType(c.GetString("userType"), "User"); err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 	return
+	// }
 	rows, err := Db.Query(`SELECT name,email,mobileNo from Students`)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

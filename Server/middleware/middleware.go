@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"errors"
 	"net/http"
 	"os"
 	"time"
@@ -10,7 +11,7 @@ import (
 	"github.com/mskKandula/model"
 )
 
-func GenerateJWT(creds model.UserLogin, id int) (string, time.Time, error) {
+func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.Time, error) {
 
 	var err error
 
@@ -26,6 +27,8 @@ func GenerateJWT(creds model.UserLogin, id int) (string, time.Time, error) {
 	atClaims["password"] = creds.Password
 
 	atClaims["id"] = id
+
+	atClaims["userType"] = userType
 
 	expirationTime := time.Now().Add(time.Minute * 5)
 
@@ -43,7 +46,7 @@ func GenerateJWT(creds model.UserLogin, id int) (string, time.Time, error) {
 
 }
 
-func ValidateToken(tokenString string) (interface{}, error) {
+func ValidateToken(tokenString string) (interface{}, interface{}, error) {
 
 	// Initialize a new instance of `Claims`
 	claims := jwt.MapClaims{}
@@ -57,18 +60,20 @@ func ValidateToken(tokenString string) (interface{}, error) {
 
 	if err != nil {
 		if err == jwt.ErrSignatureInvalid {
-			return 0, err
+			return 0, "", err
 		}
-		return 0, err
+		return 0, "", err
 	}
 
 	if !token.Valid {
-		return 0, err
+		return 0, "", err
 	}
 
 	id := claims["id"]
 
-	return id, nil
+	userType := claims["userType"]
+
+	return id, userType, nil
 }
 
 func Auth() gin.HandlerFunc {
@@ -84,14 +89,14 @@ func Auth() gin.HandlerFunc {
 			}
 			// For any other type of error, return a bad request status
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-
+			c.Abort()
 			return
 		}
 
 		// Get the JWT string from the cookie
 		tokenString := cookie.Value
 
-		id, err := ValidateToken(tokenString)
+		id, userType, err := ValidateToken(tokenString)
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -99,13 +104,23 @@ func Auth() gin.HandlerFunc {
 				return
 			}
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.Abort()
 			return
 		}
 
 		intId := int(id.(float64))
+		uType := userType.(string)
 
 		c.Set("userId", intId)
+		c.Set("userType", uType)
 
 		c.Next()
 	}
+}
+
+func CheckUserType(role, userType string) error {
+	if role != userType {
+		return errors.New("Unauthorized to access this resource")
+	}
+	return nil
 }
