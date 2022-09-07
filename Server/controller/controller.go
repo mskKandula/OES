@@ -572,14 +572,22 @@ func VideoUploadHandler(c *gin.Context) {
 	imagePath := filepath.Join("media/video", paths[0], imageName)
 
 	// FilePath Creation
-	// dstFile, err := create(path)
+	// dstFile, err := create(dstPath)
 
 	// if err != nil {
 	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	// 	return
 	// }
 
-	// _, err = io.Copy(dstFile, file)
+	// fileData, err := file.Open()
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	// defer fileData.Close()
+
+	// _, err = io.Copy(dstFile, fileData)
 
 	// if err != nil {
 	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -589,7 +597,10 @@ func VideoUploadHandler(c *gin.Context) {
 	// defer dstFile.Close()
 
 	// Upload the file to specific dst.
-	c.SaveUploadedFile(file, dstPath)
+	if err = c.SaveUploadedFile(file, dstPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
+		return
+	}
 
 	query, err := Db.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description) VALUES(?,?,?,?,?)")
 
@@ -613,7 +624,7 @@ func VideoUploadHandler(c *gin.Context) {
 
 // file path creation
 // func create(path string) (*os.File, error) {
-// 	if err := os.MkdirAll(filepath.Dir(path), 0770); err != nil {
+// 	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
 // 		return nil, err
 // 	}
 // 	return os.Create(path)
@@ -659,7 +670,35 @@ func ExamProofHandler(c *gin.Context) {
 	dstPath := filepath.Join("../media/examProofs", file.Filename)
 
 	// Upload the file to specific dst.
-	c.SaveUploadedFile(file, dstPath)
+	if err = c.SaveUploadedFile(file, dstPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
+		return
+	}
+
+	// FilePath Creation
+	// dstFile, err := create(dstPath)
+
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	// fileData, err := file.Open()
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	// defer fileData.Close()
+
+	// _, err = io.Copy(dstFile, fileData)
+
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	// defer dstFile.Close()
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 
