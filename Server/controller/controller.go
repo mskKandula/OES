@@ -35,6 +35,7 @@ var (
 	students      []model.Student
 	rowHeaders    []string
 	BufChan       = make(chan string, 10)
+	ResultPaths   = make(chan string, 20)
 
 	requiredKeys = []string{
 		"Name",
@@ -138,7 +139,7 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	tokenString, expiriesIn, err := middleware.GenerateJWT(userLogin, id)
+	tokenString, expiriesIn, err := middleware.GenerateJWT(userLogin, id, userType)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -735,6 +736,8 @@ func ExamProofHandler(c *gin.Context) {
 	// }
 
 	// defer dstFile.Close()
+
+	ResultPaths <- dstPath
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 

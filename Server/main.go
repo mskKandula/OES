@@ -41,12 +41,15 @@ func main() {
 
 	go runningProcess.HlsVideoConversion(controller.BufChan)
 
+	go runningProcess.UnzipFile(controller.ResultPaths)
+
 	pool := websock.NewPool()
 
 	go pool.Start()
 
 	defer func() {
 		close(controller.BufChan)
+		close(controller.ResultPaths)
 	}()
 
 	// Disable Console Color, you don't need console color when writing the logs to file.

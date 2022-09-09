@@ -1,7 +1,9 @@
 package runningProcess
 
 import (
-	"fmt"
+	"archive/zip"
+	"io"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -30,7 +32,8 @@ func HlsVideoConversion(resultChan <-chan string) {
 		err := cmd.Run()
 
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err)
+			continue
 		}
 
 		imageFileName := strings.Split(file, ".")[0] + ".png"
@@ -40,14 +43,70 @@ func HlsVideoConversion(resultChan <-chan string) {
 		err = cmd.Run()
 
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err)
+			continue
 		}
 
 		err = os.Remove(result)
 
 		if err != nil {
-			fmt.Println(err.Error())
+			log.Println(err)
 		}
 	}
 
+}
+
+func UnzipFile(resultPaths <-chan string) {
+
+	for result := range resultPaths {
+		reader, err := zip.OpenReader(result)
+
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+
+		for _, file := range reader.File {
+
+			fpath := file.Name
+
+			// Make Folder
+			if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+				log.Println(err)
+				continue
+			}
+
+			// Create/Open dst File
+			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE, file.Mode())
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			// Open src File
+			inFile, err := file.Open()
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			// Copy src to dst
+			_, err = io.Copy(outFile, inFile)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			// Close the file without defer to close before next iteration of loop
+			outFile.Close()
+			inFile.Close()
+		}
+
+		err = os.Remove(result)
+
+		if err != nil {
+			log.Println(err)
+		}
+		reader.Close()
+	}
 }
