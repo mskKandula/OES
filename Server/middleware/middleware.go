@@ -24,8 +24,6 @@ func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.T
 
 	atClaims["email"] = creds.Email
 
-	atClaims["password"] = creds.Password
-
 	atClaims["id"] = id
 
 	atClaims["userType"] = userType
@@ -73,7 +71,7 @@ func ValidateToken(tokenString, role string) (interface{}, interface{}, error) {
 
 	userType := claims["userType"]
 
-	if userType.(string) != role {
+	if userType.(string) != role && role != "Common" {
 		return 0, "", errors.New("unauthorized to access this resource")
 	}
 
@@ -112,11 +110,11 @@ func Auth(role string) gin.HandlerFunc {
 			return
 		}
 
-		intId := int(id.(float64))
-		uType := userType.(string)
+		// intId := int(id.(float64))
+		// uType := userType.(string)
 
-		c.Set("userId", intId)
-		c.Set("userType", uType)
+		c.Set("userId", id)
+		c.Set("userType", userType)
 
 		c.Next()
 	}

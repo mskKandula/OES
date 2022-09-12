@@ -88,9 +88,12 @@ func initRouter(pool *websock.Pool) *gin.Engine {
 	{
 		open.POST("/signUp", controller.SignUp)
 		open.POST("/login", controller.Login)
+	}
 
-		open.GET("/getRoutes", controller.GetAllRoutes)
-		open.GET("/logOut", controller.Logout)
+	common := r.Group("/r").Use(middleware.Auth("Common"))
+	{
+		common.GET("/getRoutes", controller.GetAllRoutes)
+		common.GET("/logOut", controller.Logout)
 	}
 
 	user := r.Group("/r").Use(middleware.Auth("User"))
