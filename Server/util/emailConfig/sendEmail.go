@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"html/template"
 
-	"github.com/mskKandula/model"
-	"github.com/mskKandula/variables"
+	"github.com/mskKandula/oes/api/model"
+	"github.com/mskKandula/oes/api/variables"
 	gomail "gopkg.in/gomail.v2"
 )
 
-func SendEmail(user model.BasicDetails) error {
+func SendEmail(user model.Student) error {
 
 	body, err := makeTemplate(user, "./emailConfig/registrationMailTemplate.html")
 
@@ -38,7 +38,7 @@ func SendEmail(user model.BasicDetails) error {
 
 }
 
-func makeTemplate(profileObj model.BasicDetails, templatePath string) (string, error) {
+func makeTemplate(profileObj model.Student, templatePath string) (string, error) {
 
 	parsedTemplate, err := template.ParseFiles(templatePath)
 

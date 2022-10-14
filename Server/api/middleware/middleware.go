@@ -8,7 +8,7 @@ import (
 
 	jwt "github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"github.com/mskKandula/model"
+	"github.com/mskKandula/oes/api/model"
 )
 
 func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.Time, error) {
@@ -110,11 +110,11 @@ func Auth(role string) gin.HandlerFunc {
 			return
 		}
 
-		// intId := int(id.(float64))
-		// uType := userType.(string)
+		intId := int(id.(float64))
+		uType := userType.(string)
 
-		c.Set("userId", id)
-		c.Set("userType", userType)
+		c.Set("userId", intId)
+		c.Set("userType", uType)
 
 		c.Next()
 	}

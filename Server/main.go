@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"fmt"
 	"io"
 	"log"
@@ -11,46 +10,37 @@ import (
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/go-sql-driver/mysql"
-	"github.com/mskKandula/config"
-	"github.com/mskKandula/controller"
-	"github.com/mskKandula/middleware"
-	"github.com/mskKandula/runningProcess"
-	"github.com/mskKandula/websock"
+	cnf "github.com/mskKandula/oes/api/config"
+
+	"github.com/mskKandula/oes/api"
+	"github.com/mskKandula/oes/api/handler"
 )
 
 var (
 	err error
 )
 
-func init() {
-	controller.Db, err = sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/OES")
+// func init() {
 
-	if err != nil {
-		log.Fatalf("Connection Failed to Open: %v", err.Error())
-	}
+// 	controller.Db, err = sql.Open("mysql", "root:root@123456789@tcp(127.0.0.1:3306)/OES")
 
-	// sudo service redis-server start
+// 	if err != nil {
+// 		log.Fatalf("Connection Failed to Open: %v", err.Error())
+// 	}
 
-	// Create Redis Client
-	config.CreateRedisClient()
+// 	// sudo service redis-server start
 
-}
+// 	// Create Redis Client
+// 	config.CreateRedisClient()
+
+// }
 
 func main() {
 	fmt.Println("Lets start OES")
 
-	go runningProcess.HlsVideoConversion(controller.BufChan)
-
-	go runningProcess.UnzipFile(controller.ResultPaths)
-
-	pool := websock.NewPool()
-
-	go pool.Start()
-
-	defer func() {
-		close(controller.BufChan)
-		close(controller.ResultPaths)
-	}()
+	if err = cnf.Setup("config.json"); err != nil {
+		log.Fatalf("Setup Failed:%v", err.Error())
+	}
 
 	// Disable Console Color, you don't need console color when writing the logs to file.
 	gin.DisableConsoleColor()
@@ -61,7 +51,12 @@ func main() {
 
 	// fs := http.FileServer(http.Dir("../Client/oes/dist"))
 
-	router := initRouter(pool)
+	defer func() {
+		close(handler.BufChan)
+		close(handler.ResultPaths)
+	}()
+
+	router := api.InitRouter()
 	// go func() {
 	// 	r.Run(":8081")
 	// }()
@@ -75,44 +70,4 @@ func main() {
 		MaxHeaderBytes: 1 << 20,
 	}
 	s.ListenAndServe()
-}
-
-func initRouter(pool *websock.Pool) *gin.Engine {
-	r := gin.Default()
-	// r.Use(static.Serve("/", static.LocalFile("../Client/oes/dist", false)))
-	r.GET("/ws", func(c *gin.Context) {
-		controller.ServeWs(pool, c.Writer, c.Request)
-	})
-
-	open := r.Group("/o")
-	{
-		open.POST("/signUp", controller.SignUp)
-		open.POST("/login", controller.Login)
-	}
-
-	common := r.Group("/r").Use(middleware.Auth("Common"))
-	{
-		common.GET("/getRoutes", controller.GetAllRoutes)
-		common.GET("/logOut", controller.Logout)
-	}
-
-	user := r.Group("/r").Use(middleware.Auth("User"))
-	{
-		user.POST("/multipleStudentsRegistration", controller.StudentsRegisterHandler)
-		user.POST("/uploadQuestionFile", controller.QuestionsUploadHandler)
-		user.POST("/uploadVideoContent", controller.VideoUploadHandler)
-
-		user.GET("/getStudents", controller.GetStudents)
-		user.GET("/downloadStudents", controller.DownloadStudents)
-	}
-
-	student := r.Group("/r").Use(middleware.Auth("Student"))
-	{
-		student.POST("/uploadExamProof", controller.ExamProofHandler)
-
-		student.GET("/getQuestions", controller.GetQuestions)
-		student.GET("/getVideos", controller.GetVideos)
-	}
-
-	return r
 }

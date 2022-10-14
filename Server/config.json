@@ -1,0 +1,6 @@
+{
+  "database": {
+    "MySqlDSN": "root:root@123456789@tcp(localhost:3306)/OES",
+    "RedisDSN": "redis://localhost:6379/0"
+  }
+}

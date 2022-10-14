@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/mskKandula/config"
+	ds "github.com/mskKandula/oes/dataSources"
 )
 
 // var Conns = make(map[*websocket.Conn]bool)
@@ -37,9 +37,9 @@ func NewPool() *Pool {
 	return poolInit
 }
 
-func (pool *Pool) Start() {
+func (pool *Pool) Start(ds *ds.DataSources) {
 
-	go pool.listenPubSubChannel()
+	go pool.listenPubSubChannel(ds)
 
 	for {
 		select {
@@ -66,19 +66,19 @@ func (pool *Pool) Start() {
 
 		case message := <-pool.Broadcast:
 			// Publish the message on "general" channel
-			pool.publishMessage(message)
+			pool.publishMessage(message, ds)
 		}
 	}
 }
 
 // Redis Publish message functionality
-func (pool *Pool) publishMessage(msg Message) {
+func (pool *Pool) publishMessage(msg Message, ds *ds.DataSources) {
 	payload, err := json.Marshal(msg)
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	err = config.Redis.Publish(ctx, PubSubGeneralChannel, payload).Err()
+	err = ds.Redis.Publish(ctx, PubSubGeneralChannel, payload).Err()
 
 	if err != nil {
 		log.Println(err)
@@ -87,9 +87,9 @@ func (pool *Pool) publishMessage(msg Message) {
 }
 
 // Redis Subscribe & Listen on channel("general") functionality
-func (pool *Pool) listenPubSubChannel() {
+func (pool *Pool) listenPubSubChannel(ds *ds.DataSources) {
 
-	pubsub := config.Redis.Subscribe(ctx, PubSubGeneralChannel)
+	pubsub := ds.Redis.Subscribe(ctx, PubSubGeneralChannel)
 
 	msg := Message{}
 
