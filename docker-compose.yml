@@ -1,0 +1,70 @@
+version: '3.0'
+
+services:
+  db:
+    container_name: "oes_db"
+    build:
+      context: .
+      dockerfile: ./MySQL/Dockerfile
+    networks:
+      - default
+    restart: always
+    expose: ["3306"]
+    # setting some env vars
+    environment:
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: "OES"
+
+      # we mount a data volume to make sure we don't lose data
+    volumes:
+      - mysql_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+  cache:
+    image: redis
+    command: ["redis-server", "--bind", "cache", "--port", "6379"]
+    expose: ["6379"]
+    volumes:
+      - cache_data:/var/lib/redis
+    networks:
+      - default
+
+  server:
+    container_name: "oes_server"
+    # we want to use the image which is build from our Dockerfile
+    build:
+      context: .
+      dockerfile: ./Server/Dockerfile
+    expose: ["9000"]
+    # we are depending on the mysql(db) & redis (cache) 
+    depends_on:
+      - db
+      - cache
+    networks:
+      - default
+    # We mount the working dir into the container, handy for development
+    # This is what makes the hot reloading work inside of a Docker container
+    # volumes:
+    #   - .:/app/oes/
+
+  client:
+   container_name: "oes_client"
+   build:
+    context: .
+    dockerfile: ./Client/Dockerfile
+   networks:
+    - default
+   restart: always
+   ports:
+    - "8080:80"
+   depends_on:
+    - server
+   links:
+    - server
+
+networks:
+  default:
+   driver: bridge
+volumes:
+  mysql_data:
+  cache_data:
