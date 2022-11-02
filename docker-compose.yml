@@ -36,6 +36,8 @@ services:
       context: .
       dockerfile: ./Server/Dockerfile
     expose: ["9000"]
+    ports:
+     - "9000:9000"
     # we are depending on the mysql(db) & redis (cache) 
     depends_on:
       - db
