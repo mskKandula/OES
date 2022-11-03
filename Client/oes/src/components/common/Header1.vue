@@ -179,6 +179,7 @@ export default {
         "mdi mdi-file-upload list-icon",
         "mdi mdi-video-plus list-icon",
         "mdi mdi-monitor-dashboard list-icon",
+        "mdi mdi-video-plus list-icon",
       ],
     };
   },
@@ -187,12 +188,12 @@ export default {
       let self = this;
       this.$http
         .get("/api/r/getRoutes")
-        .then(function (res) {
+        .then(function(res) {
           if (res.data) {
             self.routes = res.data.routes;
           }
         })
-        .catch(function () {
+        .catch(function() {
           console.log("FAILURE!!");
         });
     },
@@ -204,10 +205,10 @@ export default {
       let self = this;
       this.$http
         .get("/api/r/logOut")
-        .then(function () {
+        .then(function() {
           self.$router.push("/");
         })
-        .catch(function () {
+        .catch(function() {
           console.log("FAILURE!!");
         });
     },

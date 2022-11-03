@@ -134,6 +134,14 @@ const routes = [
           title: "WhiteBoard",
         },
       },
+      {
+        path: "/broadcastVideo/:id?",
+        name: "BroadcastVideo",
+        component: loadView("BroadcastVideo"),
+        meta: {
+          title: "BroadcastVideo",
+        },
+      },
     ],
   },
 ];
