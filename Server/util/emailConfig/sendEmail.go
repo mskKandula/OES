@@ -7,13 +7,13 @@ import (
 	"html/template"
 
 	"github.com/mskKandula/oes/api/model"
-	"github.com/mskKandula/oes/api/variables"
+	"github.com/mskKandula/oes/util/variables"
 	gomail "gopkg.in/gomail.v2"
 )
 
 func SendEmail(user model.Student) error {
 
-	body, err := makeTemplate(user, "./emailConfig/registrationMailTemplate.html")
+	body, err := makeTemplate(user, "registrationMailTemplate.html")
 
 	if err != nil {
 		return err

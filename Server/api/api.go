@@ -4,12 +4,12 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
-	ds "github.com/mskKandula/oes/api/dataSources"
 	"github.com/mskKandula/oes/api/handler"
 	"github.com/mskKandula/oes/api/middleware"
 	"github.com/mskKandula/oes/api/model"
 	"github.com/mskKandula/oes/api/repository"
 	"github.com/mskKandula/oes/api/service"
+	ds "github.com/mskKandula/oes/dataSources"
 	"github.com/mskKandula/oes/util/runningProcess"
 	"github.com/mskKandula/oes/util/websock"
 )

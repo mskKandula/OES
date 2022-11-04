@@ -567,7 +567,7 @@ export default {
         name: "",
         age: "",
         email: "",
-        phoneNo: "",
+        mobileNo: "",
         password: "",
       },
       log: {

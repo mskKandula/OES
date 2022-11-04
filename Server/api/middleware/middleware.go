@@ -28,7 +28,7 @@ func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.T
 
 	atClaims["userType"] = userType
 
-	expirationTime := time.Now().Add(time.Minute * 5)
+	expirationTime := time.Now().Add(time.Minute * 15)
 
 	atClaims["expireAt"] = expirationTime
 

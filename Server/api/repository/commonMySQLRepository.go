@@ -75,7 +75,7 @@ func (cs *commonMySQLRepository) ReadRoutes(userId int) ([]model.Route, error) {
 
 	rows, err := cs.MySQLDB.Query(`SELECT m.id,m.name,m.url,m.description FROM UserRole ur
 	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
-	INNER JOIN menu m ON rm.menuId = m.id
+	INNER JOIN Menu m ON rm.menuId = m.id
 	where ur.userId=?`, userId)
 
 	if err != nil {
@@ -104,11 +104,13 @@ func (cs *commonMySQLRepository) ReadVideos() ([]model.Video, error) {
 	const id string = "videoData"
 
 	val, err := cs.Redis.Get(ctx, id).Bytes()
+
 	if err != nil {
 		log.Println(err)
 	} else {
 		if val != nil {
 			json.Unmarshal(val, &videos)
+
 			return videos, nil
 		}
 	}
