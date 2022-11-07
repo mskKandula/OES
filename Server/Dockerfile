@@ -1,12 +1,6 @@
 # Stage 1 as builder
 FROM golang:1.18-alpine as builder
 
-# Install git && ffmpeg
-RUN apk update && \
-    apk upgrade && \
-    apk add git && \
-    apk add --no-cache ffmpeg
-
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/server
 
@@ -32,7 +26,13 @@ RUN go build -o main .
 FROM alpine:3.13.1
 
 # For CDN to serve uploaded video files
-RUN mkdir -p /app/media/video
+RUN mkdir -p /app/OES/media/video
+
+# Install git && ffmpeg
+RUN apk update && \
+    apk upgrade && \
+    apk add git && \
+    apk add --no-cache ffmpeg
 
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/server
