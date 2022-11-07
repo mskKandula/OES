@@ -58,6 +58,8 @@ func HlsVideoConversion(resultChan <-chan string) {
 
 func UnzipFile(resultPaths <-chan string) {
 
+	dir := "../media/examProofs/"
+
 	for result := range resultPaths {
 		reader, err := zip.OpenReader(result)
 
@@ -68,13 +70,13 @@ func UnzipFile(resultPaths <-chan string) {
 
 		for _, file := range reader.File {
 
-			fpath := file.Name
+			fpath := dir + file.Name
 
 			// Make Folder
-			if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-				log.Println(err)
-				continue
-			}
+			// if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+			// 	log.Println(err)
+			// 	continue
+			// }
 
 			// Create/Open dst File
 			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE, file.Mode())
@@ -101,12 +103,11 @@ func UnzipFile(resultPaths <-chan string) {
 			outFile.Close()
 			inFile.Close()
 		}
+		reader.Close()
 
 		err = os.Remove(result)
-
 		if err != nil {
 			log.Println(err)
 		}
-		reader.Close()
 	}
 }

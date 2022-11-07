@@ -220,7 +220,7 @@ export default {
         // Grab blob from canvas
         canvas.toBlob((blob) => {
           // Do things with blob here
-          blob.name = `screenshot-${new Date().getTime()}.png`;
+          blob.name = `studentId-${new Date().getTime()}.png`;
 
           self.blobsArray.push(blob);
 
