@@ -22,8 +22,6 @@ func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.T
 
 	atClaims["authorized"] = true
 
-	atClaims["email"] = creds.Email
-
 	atClaims["id"] = id
 
 	atClaims["userType"] = userType
@@ -57,9 +55,6 @@ func ValidateToken(tokenString, role string) (interface{}, interface{}, error) {
 	})
 
 	if err != nil {
-		if err == jwt.ErrSignatureInvalid {
-			return 0, "", err
-		}
 		return 0, "", err
 	}
 
