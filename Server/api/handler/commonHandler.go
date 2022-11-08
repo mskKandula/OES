@@ -46,8 +46,9 @@ func (h *Handler) Login(c *gin.Context) {
 
 func (h *Handler) GetAllRoutes(c *gin.Context) {
 	userId := c.GetInt("userId")
+	userType := c.GetString("userType")
 
-	routes, err := h.CommonService.GetRoutes(userId)
+	routes, err := h.CommonService.GetRoutes(userId, userType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

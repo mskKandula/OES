@@ -29,10 +29,10 @@ func (cs *commonMySQLRepository) LoginUser(userLogin model.UserLogin) (int, stri
 	var (
 		id       int
 		password string
-		userType string = "User"
+		userType string = "Examiner"
 	)
 
-	row := cs.MySQLDB.QueryRow("select id,password from Users where email=?", userLogin.Email)
+	row := cs.MySQLDB.QueryRow("select id,password from Examiners where email=?", userLogin.Email)
 
 	err := row.Scan(&id, &password)
 
@@ -53,7 +53,7 @@ func (cs *commonMySQLRepository) LoginUser(userLogin model.UserLogin) (int, stri
 	return id, userType, password, nil
 }
 
-func (cs *commonMySQLRepository) ReadRoutes(userId int) ([]model.Route, error) {
+func (cs *commonMySQLRepository) ReadRoutes(userId int, userType string) ([]model.Route, error) {
 
 	var routes []model.Route
 
@@ -73,10 +73,11 @@ func (cs *commonMySQLRepository) ReadRoutes(userId int) ([]model.Route, error) {
 	// 	select menuId from roleMenu where roleId =(
 	// 	select roleId from userRole where userId=?))`, val)
 
-	rows, err := cs.MySQLDB.Query(`SELECT m.id,m.name,m.url,m.description FROM UserRole ur
+	rows, err := cs.MySQLDB.Query(`SELECT m.id,m.name,m.url,m.description FROM Role r
+    INNER JOIN UserRole ur ON r.id = ur.roleId
 	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
-	INNER JOIN Menu m ON rm.menuId = m.id
-	where ur.userId=?`, userId)
+	INNER JOIN menu m ON rm.menuId = m.id
+	where ur.userId=? AND r.name=?;`, userId, userType)
 
 	if err != nil {
 		return routes, err

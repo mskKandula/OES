@@ -32,9 +32,9 @@ func (cs *commonService) UserLogin(userLogin model.UserLogin) (int, string, erro
 
 }
 
-func (cs *commonService) GetRoutes(id int) ([]model.Route, error) {
+func (cs *commonService) GetRoutes(id int, uType string) ([]model.Route, error) {
 
-	routes, err := cs.CommonRepository.ReadRoutes(id)
+	routes, err := cs.CommonRepository.ReadRoutes(id, uType)
 	if err != nil {
 		return routes, err
 	}
