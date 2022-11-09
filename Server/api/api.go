@@ -59,7 +59,7 @@ func InitRouter() *gin.Engine {
 		common.GET("/logOut", h.Logout)
 	}
 
-	user := r.Group("/r").Use(middleware.Auth("User"))
+	user := r.Group("/r").Use(middleware.Auth("Examiner"))
 	{
 		user.POST("/multipleStudentsRegistration", h.StudentsRegister)
 		user.POST("/uploadQuestionFile", h.QuestionsUpload)
