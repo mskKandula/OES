@@ -14,13 +14,12 @@ export default {
   },
   created() {
     const onlyOnce = this.$store.getters.getOnce;
-    console.log("21", onlyOnce);
     if (onlyOnce) {
       // let roleName = this.$store.getters.getUserRole
       // let clientId = this.$store.getters.getClientId
       const url = new URL("ws://localhost:9000/ws");
       url.searchParams.append("role", "User");
-      url.searchParams.append("id", "6666");
+      url.searchParams.append("id", sessionStorage.getItem("clientId"));
 
       this.ws = new WebSocket(url.href);
 

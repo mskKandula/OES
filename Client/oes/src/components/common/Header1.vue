@@ -206,6 +206,7 @@ export default {
       this.$http
         .get("/api/r/logOut")
         .then(function() {
+          sessionStorage.clear()
           self.$router.push("/");
         })
         .catch(function() {

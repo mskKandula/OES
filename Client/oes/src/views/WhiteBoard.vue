@@ -64,7 +64,7 @@ export default {
           JSON.stringify({
             type: 3,
             body: this.$refs.canvas.toDataURL("image/png"),
-            id: "6666",
+            id: sessionStorage.getItem("clientId"),
           })
         );
       }
@@ -95,7 +95,7 @@ export default {
         JSON.stringify({
           type: 3,
           body: this.$refs.canvas.toDataURL("image/png"),
-          id: "6666",
+          id: sessionStorage.getItem("clientId"),
         })
       );
     },

@@ -620,6 +620,7 @@ export default {
         })
         .then(function (res) {
           if (res.data) {
+            sessionStorage.setItem(clientId, res.data.clientId)
             if (res.data.userType === "User") {
               self.$router.push({ path: "/dashboard" });
             } else {

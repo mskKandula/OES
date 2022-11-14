@@ -68,6 +68,7 @@ export default {
                 Add the form data we need to submit
             */
       formData.append("myFile", file);
+      formdata.append("clientId",sessionStorage.getItem("clientId"))
       /*
           Make the request to the POST /single-file URL
         */

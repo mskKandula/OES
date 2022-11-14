@@ -34,7 +34,7 @@ export default {
       // let clientId = this.$store.getters.getClientId
       const url = new URL("ws://localhost:9000/ws");
       url.searchParams.append("role", "Student");
-      url.searchParams.append("id", "6666");
+      url.searchParams.append("id", sessionStorage.getItem("clientId"));
 
       this.ws = new WebSocket(url.href);
 

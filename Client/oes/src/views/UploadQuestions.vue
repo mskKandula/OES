@@ -103,7 +103,7 @@ export default {
         JSON.stringify({
           type: 1,
           body: "Exam has started, Please check",
-          id: "6666",
+          id: sessionStorage.getItem("clientId"),
         })
       );
     },
