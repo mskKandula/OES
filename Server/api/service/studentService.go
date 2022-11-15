@@ -40,7 +40,7 @@ func NewStudentService(ssc *StudentServiceConfig) model.StudentService {
 	}
 }
 
-func (ss *studentService) CreateStudents(byteArray []byte) ([]model.Student, error) {
+func (ss *studentService) CreateStudents(byteArray []byte, clientId string) ([]model.Student, error) {
 
 	result, err := excelToJson(byteArray)
 	if err != nil {
@@ -60,7 +60,7 @@ func (ss *studentService) CreateStudents(byteArray []byte) ([]model.Student, err
 		}
 		hashedPassword := string(hash)
 
-		student := model.Student{name, email, mobile, hashedPassword}
+		student := model.Student{name, email, mobile, hashedPassword, clientId}
 
 		if err = ss.StudentRepository.Create(&student); err != nil {
 			return nil, err

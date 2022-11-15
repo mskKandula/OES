@@ -19,8 +19,8 @@ func NewCommonService(ssc *CommonServiceConfig) model.CommonService {
 	}
 }
 
-func (cs *commonService) UserLogin(userLogin model.UserLogin) (int, string, error) {
-	id, userType, password, err := cs.CommonRepository.LoginUser(userLogin)
+func (cs *commonService) UserLogin(userLogin model.UserLogin) (int, string, string, error) {
+	id, userType, password, clientId, err := cs.CommonRepository.LoginUser(userLogin)
 	if err != nil {
 		return 0, "", err
 	}
@@ -28,7 +28,7 @@ func (cs *commonService) UserLogin(userLogin model.UserLogin) (int, string, erro
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(userLogin.Password)); err != nil {
 		return 0, "", err
 	}
-	return id, userType, nil
+	return id, userType, clientId, nil
 
 }
 
@@ -43,9 +43,9 @@ func (cs *commonService) GetRoutes(id int, uType string) ([]model.Route, error) 
 
 }
 
-func (cs *commonService) GetVideos() ([]model.Video, error) {
+func (cs *commonService) GetVideos(clientId string) ([]model.Video, error) {
 
-	videos, err := cs.CommonRepository.ReadVideos()
+	videos, err := cs.CommonRepository.ReadVideos(clientId)
 	if err != nil {
 		return videos, err
 	}

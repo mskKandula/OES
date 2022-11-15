@@ -16,12 +16,22 @@ var (
 func (h *Handler) StudentsRegister(c *gin.Context) {
 	// file, handler, err := c.Request.FormFile("myFile")
 
-	file, err := c.FormFile("myFile")
+	form, err := c.MultipartForm()
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	file := form.File["myFile"]
+	clientId := form.Value["clientId"]
+
+	// file, err := c.FormFile("myFile")
+
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 	return
+	// }
 
 	// defer file.Close()
 
@@ -49,7 +59,7 @@ func (h *Handler) StudentsRegister(c *gin.Context) {
 		return
 	}
 
-	students, err := h.StudentService.CreateStudents(fileBytes)
+	students, err := h.StudentService.CreateStudents(fileBytes, clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

@@ -11,7 +11,7 @@ import (
 	"github.com/mskKandula/oes/api/model"
 )
 
-func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.Time, error) {
+func GenerateJWT(creds model.UserLogin, id int, userType, clientId string) (string, time.Time, error) {
 
 	var err error
 
@@ -21,6 +21,8 @@ func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.T
 	atClaims := jwt.MapClaims{}
 
 	atClaims["authorized"] = true
+
+	atClaims["clientId"] = clientId
 
 	atClaims["id"] = id
 
@@ -42,7 +44,7 @@ func GenerateJWT(creds model.UserLogin, id int, userType string) (string, time.T
 
 }
 
-func ValidateToken(tokenString, role string) (interface{}, interface{}, error) {
+func ValidateToken(tokenString, role string) (interface{}, interface{}, interface{}, error) {
 
 	// Initialize a new instance of `Claims`
 	claims := jwt.MapClaims{}
@@ -55,22 +57,24 @@ func ValidateToken(tokenString, role string) (interface{}, interface{}, error) {
 	})
 
 	if err != nil {
-		return 0, "", err
+		return 0, "", "", err
 	}
 
 	if !token.Valid {
-		return 0, "", err
+		return 0, "", "", err
 	}
 
 	id := claims["id"]
 
 	userType := claims["userType"]
 
+	clientId := claims["clientId"]
+
 	if userType.(string) != role && role != "Common" {
-		return 0, "", errors.New("unauthorized to access this resource")
+		return 0, "", "", errors.New("unauthorized to access this resource")
 	}
 
-	return id, userType, nil
+	return id, userType, clientId, nil
 }
 
 func Auth(role string) gin.HandlerFunc {
@@ -93,7 +97,7 @@ func Auth(role string) gin.HandlerFunc {
 		// Get the JWT string from the cookie
 		tokenString := cookie.Value
 
-		id, userType, err := ValidateToken(tokenString, role)
+		id, userType, clientId, err := ValidateToken(tokenString, role)
 		if err != nil {
 			if err == jwt.ErrSignatureInvalid {
 				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
@@ -107,9 +111,11 @@ func Auth(role string) gin.HandlerFunc {
 
 		intId := int(id.(float64))
 		uType := userType.(string)
+		cId := clientId.(string)
 
 		c.Set("userId", intId)
 		c.Set("userType", uType)
+		c.Set("clientId", cId)
 
 		c.Next()
 	}

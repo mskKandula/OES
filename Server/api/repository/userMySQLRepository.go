@@ -2,8 +2,10 @@ package repository
 
 import (
 	"database/sql"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/google/uuid"
 	"github.com/mskKandula/oes/api/model"
 )
 
@@ -18,13 +20,15 @@ func NewUserMySQLRepository(rc *RepositoryConfig) model.UserRepository {
 }
 
 func (ur *userMySQLRepository) Create(user model.User, password string) error {
-	query, err := ur.MySQLDB.Prepare("INSERT INTO Examiners(name, age, email, mobileNo, password) VALUES(?,?,?,?,?)")
+	query, err := ur.MySQLDB.Prepare("INSERT INTO Examiners(name, age, email, mobileNo, password,clientId) VALUES(?,?,?,?,?)")
 
 	if err != nil {
 		return err
 	}
 
-	result, err := query.Exec(user.Name, user.Age, user.Email, user.MobileNo, password)
+	id := uuid.New()
+
+	result, err := query.Exec(user.Name, user.Age, user.Email, user.MobileNo, password, strings.Replace(id.String(), "-", "", -1))
 
 	if err != nil {
 		return err
@@ -43,13 +47,13 @@ func (ur *userMySQLRepository) Create(user model.User, password string) error {
 	return nil
 }
 
-func (ur *userMySQLRepository) CreateVideo(fileName, videoUrl, imagePath string) error {
-	query, err := ur.MySQLDB.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description) VALUES(?,?,?,?,?)")
+func (ur *userMySQLRepository) CreateVideo(fileName, videoUrl, imagePath, clientId string) error {
+	query, err := ur.MySQLDB.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description,clientId) VALUES(?,?,?,?,?)")
 	if err != nil {
 		return err
 	}
 
-	_, err = query.Exec(fileName, videoUrl, imagePath, "video/mp4", "Sample Video")
+	_, err = query.Exec(fileName, videoUrl, imagePath, "video/mp4", "Sample Video", clientId)
 	if err != nil {
 		return err
 	}

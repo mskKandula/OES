@@ -18,12 +18,12 @@ func NewStudentMySQLRepository(rc *RepositoryConfig) model.StudentRepository {
 }
 
 func (sr *studentMySQLRepository) Create(student *model.Student) error {
-	query, err := sr.MySQLDB.Prepare("INSERT INTO Students(name, email, mobileNo, password) VALUES(?,?,?,?)")
+	query, err := sr.MySQLDB.Prepare("INSERT INTO Students(name, email, mobileNo, password,clientId) VALUES(?,?,?,?)")
 	if err != nil {
 		return err
 	}
 
-	result, err := query.Exec(student.Name, student.Email, student.Mobile, student.Password)
+	result, err := query.Exec(student.Name, student.Email, student.Mobile, student.Password, student.ClientId)
 	if err != nil {
 		return err
 	}
@@ -40,9 +40,9 @@ func (sr *studentMySQLRepository) Create(student *model.Student) error {
 	return nil
 }
 
-func (sr *studentMySQLRepository) ReadAll() ([]model.Student, error) {
+func (sr *studentMySQLRepository) ReadAll(clientId string) ([]model.Student, error) {
 	var students []model.Student
-	rows, err := sr.MySQLDB.Query(`SELECT name,email,mobileNo from Students`)
+	rows, err := sr.MySQLDB.Query(`SELECT name,email,mobileNo from Students where clientId=?`, clientId)
 	if err != nil {
 		return nil, err
 	}

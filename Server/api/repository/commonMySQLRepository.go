@@ -24,33 +24,34 @@ func NewCommonMySQLRepository(rc *RepositoryConfig) model.CommonRepository {
 	}
 }
 
-func (cs *commonMySQLRepository) LoginUser(userLogin model.UserLogin) (int, string, string, error) {
+func (cs *commonMySQLRepository) LoginUser(userLogin model.UserLogin) (int, string, string, string, error) {
 
 	var (
 		id       int
 		password string
+		clientId string
 		userType string = "Examiner"
 	)
 
-	row := cs.MySQLDB.QueryRow("select id,password from Examiners where email=?", userLogin.Email)
+	row := cs.MySQLDB.QueryRow("select id,password,clientId from Examiners where email=?", userLogin.Email)
 
-	err := row.Scan(&id, &password)
+	err := row.Scan(&id, &password, &clientId)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			row := cs.MySQLDB.QueryRow("select id,password from Students where email=?", userLogin.Email)
+			row := cs.MySQLDB.QueryRow("select id,password,clientId from Students where email=?", userLogin.Email)
 
-			err = row.Scan(&id, &password)
+			err = row.Scan(&id, &password, &clientId)
 
 			if err != nil {
 				if err == sql.ErrNoRows {
-					return 0, "", "", err
+					return 0, "", "", "", err
 				}
 			}
 			userType = "Student"
 		}
 	}
-	return id, userType, password, nil
+	return id, userType, password, clientId, nil
 }
 
 func (cs *commonMySQLRepository) ReadRoutes(userId int, userType string) ([]model.Route, error) {
@@ -97,14 +98,13 @@ func (cs *commonMySQLRepository) ReadRoutes(userId int, userType string) ([]mode
 	return routes, nil
 }
 
-func (cs *commonMySQLRepository) ReadVideos() ([]model.Video, error) {
+func (cs *commonMySQLRepository) ReadVideos(clientId string) ([]model.Video, error) {
 	var (
 		videos []model.Video
 		ctx    = context.Background()
 	)
-	const id string = "videoData"
 
-	val, err := cs.Redis.Get(ctx, id).Bytes()
+	val, err := cs.Redis.Get(ctx, clientId).Bytes()
 
 	if err != nil {
 		log.Println(err)
@@ -116,7 +116,7 @@ func (cs *commonMySQLRepository) ReadVideos() ([]model.Video, error) {
 		}
 	}
 
-	rows, err := cs.MySQLDB.Query(`SELECT name, videoUrl,thumbnailPath,description from VideoContent`)
+	rows, err := cs.MySQLDB.Query(`SELECT name, videoUrl,thumbnailPath,description from VideoContent where clientId = ?`, clientId)
 	if err != nil {
 		return videos, err
 	}
@@ -137,7 +137,7 @@ func (cs *commonMySQLRepository) ReadVideos() ([]model.Video, error) {
 	if err != nil {
 		log.Println(err)
 	} else {
-		err = cs.Redis.Set(ctx, id, json, 15*time.Minute).Err()
+		err = cs.Redis.Set(ctx, clientId, json, 15*time.Minute).Err()
 		if err != nil {
 			log.Println(err)
 		}

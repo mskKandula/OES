@@ -20,13 +20,13 @@ type Video struct {
 }
 
 type CommonService interface {
-	UserLogin(UserLogin) (int, string, error)
+	UserLogin(UserLogin) (int, string, string, error)
 	GetRoutes(int, string) ([]Route, error)
-	GetVideos() ([]Video, error)
+	GetVideos(string) ([]Video, error)
 }
 
 type CommonRepository interface {
-	LoginUser(UserLogin) (int, string, string, error)
+	LoginUser(UserLogin) (int, string, string, string, error)
 	ReadRoutes(int, string) ([]Route, error)
-	ReadVideos() ([]Video, error)
+	ReadVideos(string) ([]Video, error)
 }

@@ -21,13 +21,13 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	id, userType, err := h.CommonService.UserLogin(userLogin)
+	id, userType, clientId, err := h.CommonService.UserLogin(userLogin)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
 	}
 
-	tokenString, expiriesIn, err := middleware.GenerateJWT(userLogin, id, userType)
+	tokenString, expiriesIn, err := middleware.GenerateJWT(userLogin, id, userType, clientId)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -41,7 +41,7 @@ func (h *Handler) Login(c *gin.Context) {
 		Expires: expiriesIn,
 	})
 
-	c.JSON(http.StatusOK, gin.H{"userType": userType})
+	c.JSON(http.StatusOK, gin.H{"userType": userType, "clientId": clientId})
 }
 
 func (h *Handler) GetAllRoutes(c *gin.Context) {
@@ -57,7 +57,8 @@ func (h *Handler) GetAllRoutes(c *gin.Context) {
 }
 
 func (h *Handler) GetAllVideos(c *gin.Context) {
-	videos, err := h.CommonService.GetVideos()
+	clientId := c.GetString("clientId")
+	videos, err := h.CommonService.GetVideos(clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
