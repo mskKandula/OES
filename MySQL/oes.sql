@@ -1,27 +1,29 @@
 CREATE TABLE `Examiners`(  
-    id int NOT NULL AUTO_INCREMENT,  
-    name varchar(45) NOT NULL,
-    age int,
-    email varchar(45) NOT NULL,
-    mobileNo varchar(45) NOT NULL,
-    password varchar(100) NOT NULL,
+    id INT NOT NULL AUTO_INCREMENT,  
+    name VARCHAR(45) NOT NULL,
+    age INT,
+    email VARCHAR(45) NOT NULL,
+    mobileNo VARCHAR(45) NOT NULL,
+    password VARCHAR(100) NOT NULL,
+    clientId VARCHAR(100) NOT NULL,
     PRIMARY KEY (`id`)  
 ); 
 
 CREATE TABLE `Students` (  
-    id int NOT NULL AUTO_INCREMENT,  
-    name varchar(45) NOT NULL,
-    email varchar(45) NOT NULL UNIQUE,
-    mobileNo varchar(45) NOT NULL UNIQUE,
-    password varchar(100) NOT NULL,
+    id INT NOT NULL AUTO_INCREMENT,  
+    name VARCHAR(45) NOT NULL,
+    email VARCHAR(45) NOT NULL UNIQUE,
+    mobileNo VARCHAR(45) NOT NULL UNIQUE,
+    password VARCHAR(100) NOT NULL,
+    clientId VARCHAR(100) NOT NULL,
     PRIMARY KEY (`id`)  
 ); 
 
 CREATE TABLE `Menu` (  
-    id int NOT NULL AUTO_INCREMENT,  
-    name varchar(45) NOT NULL,
-    url varchar(45) NOT NULL,
-    description varchar(45) NOT NULL,
+    id INT NOT NULL AUTO_INCREMENT,  
+    name VARCHAR(45) NOT NULL,
+    url VARCHAR(45) NOT NULL,
+    description VARCHAR(45) NOT NULL,
     PRIMARY KEY (`id`)  
 ); 
 
@@ -37,21 +39,21 @@ INSERT INTO `Menu`(`name`,`url`,`description`) VALUES
 ('BroadcastVideo','/broadcastVideo','BroadcastVideo');
 
 CREATE TABLE `Role` (  
-    id int NOT NULL AUTO_INCREMENT,  
-    name varchar(45) NOT NULL,
+    id INT NOT NULL AUTO_INCREMENT,  
+    name VARCHAR(45) NOT NULL,
     PRIMARY KEY (`id`)  
 );  
 
 INSERT INTO `Role`(`name`) VALUES('Examiner'),('Student');
 
 CREATE TABLE `UserRole` (  
-    userId int NOT NULL,  
-    roleId int NOT NULL
+    userId INT NOT NULL,  
+    roleId INT NOT NULL
 );
 
 CREATE TABLE `RoleMenu` (  
-    roleId int NOT NULL,  
-    menuId int NOT NULL
+    roleId INT NOT NULL,  
+    menuId INT NOT NULL
 );
 
 INSERT INTO `RoleMenu`(`roleId`,`menuId`) VALUES(2,6),(2,7),(2,8),(2,9),(2,11);
@@ -65,4 +67,5 @@ CREATE TABLE `VideoContent`(
     thumbnailPath VARCHAR(100) NOT NULL,
     contentType VARCHAR(50) NOT NULL,
     description VARCHAR(100),
+    clientId VARCHAR(100) NOT NULL,
     PRIMARY KEY (`id`));

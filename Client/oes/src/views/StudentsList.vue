@@ -32,7 +32,6 @@ export default {
         .get("/api/r/getStudents")
         .then(function (res) {
           if (res.data) {
-            console.log("38", res);
             self.studentsList = res.data.students;
           }
         })
