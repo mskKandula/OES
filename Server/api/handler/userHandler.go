@@ -64,8 +64,8 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 
 	dstPath := filepath.Join("../media/video", paths[0], file.Filename)
 
-	m3u8Path := filepath.Join("media/video", paths[0], "index.m3u8")
-	imagePath := filepath.Join("media/video", paths[0], imageName)
+	m3u8Path := filepath.Join("/media/video", paths[0], "index.m3u8")
+	imagePath := filepath.Join("/media/video", paths[0], imageName)
 
 	// FilePath Creation
 	dstFile, err := Create(dstPath)
@@ -97,8 +97,8 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
 	// 	return
 	// }
-
-	if err = h.UserService.CreateVideoFile(paths[0], m3u8Path, imagePath); err != nil {
+	clientId := c.GetString("clientId")
+	if err = h.UserService.CreateVideoFile(paths[0], m3u8Path, imagePath, clientId); err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
 		return

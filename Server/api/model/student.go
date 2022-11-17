@@ -14,11 +14,11 @@ type Student struct {
 
 type StudentService interface {
 	CreateStudents([]byte, string) ([]Student, error)
-	FetchStudents() ([]Student, error)
-	FetchAndPrepare(string) (*xlsx.File, error)
+	FetchStudents(string) ([]Student, error)
+	FetchAndPrepare(string, string) (*xlsx.File, error)
 }
 
 type StudentRepository interface {
 	Create(*Student) error
-	ReadAll() ([]Student, error)
+	ReadAll(string) ([]Student, error)
 }

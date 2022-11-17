@@ -10,10 +10,10 @@ type User struct {
 
 type UserService interface {
 	CreateUser(user User) error
-	CreateVideoFile(fileName, url, imagePath string) error
+	CreateVideoFile(fileName, url, imagePath, clientId string) error
 }
 
 type UserRepository interface {
 	Create(user User, password string) error
-	CreateVideo(fileName, url, imagePath string) error
+	CreateVideo(fileName, url, imagePath, clientId string) error
 }

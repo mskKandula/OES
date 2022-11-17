@@ -15,25 +15,16 @@ var (
 
 func (h *Handler) StudentsRegister(c *gin.Context) {
 	// file, handler, err := c.Request.FormFile("myFile")
+	// defer file.Close()
 
-	form, err := c.MultipartForm()
+	clientId := c.GetString("clientId")
+
+	file, err := c.FormFile("myFile")
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	file := form.File["myFile"]
-	clientId := form.Value["clientId"]
-
-	// file, err := c.FormFile("myFile")
-
-	// if err != nil {
-	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	// defer file.Close()
 
 	if strings.Split(file.Filename, ".")[1] != "xlsx" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
@@ -69,8 +60,8 @@ func (h *Handler) StudentsRegister(c *gin.Context) {
 }
 
 func (h *Handler) GetStudents(c *gin.Context) {
-
-	students, err := h.StudentService.FetchStudents()
+	clientId := c.GetString("clientId")
+	students, err := h.StudentService.FetchStudents(clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -80,8 +71,8 @@ func (h *Handler) GetStudents(c *gin.Context) {
 }
 
 func (h *Handler) DownloadStudents(c *gin.Context) {
-
-	file, err := h.StudentService.FetchAndPrepare("All Students Details")
+	clientId := c.GetString("clientId")
+	file, err := h.StudentService.FetchAndPrepare("All Students Details", clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

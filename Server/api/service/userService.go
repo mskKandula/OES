@@ -37,8 +37,8 @@ func (us *userService) CreateUser(user model.User) error {
 	return nil
 }
 
-func (us *userService) CreateVideoFile(fileName, url, imagePath string) error {
-	if err := us.UserRepository.CreateVideo(fileName, url, imagePath); err != nil {
+func (us *userService) CreateVideoFile(fileName, url, imagePath, clientId string) error {
+	if err := us.UserRepository.CreateVideo(fileName, url, imagePath, clientId); err != nil {
 		return err
 	}
 	return nil

@@ -77,7 +77,7 @@ func (cs *commonMySQLRepository) ReadRoutes(userId int, userType string) ([]mode
 	rows, err := cs.MySQLDB.Query(`SELECT m.id,m.name,m.url,m.description FROM Role r
     INNER JOIN UserRole ur ON r.id = ur.roleId
 	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
-	INNER JOIN menu m ON rm.menuId = m.id
+	INNER JOIN Menu m ON rm.menuId = m.id
 	WHERE ur.userId=? AND r.name=? ORDER BY m.id;`, userId, userType)
 
 	if err != nil {

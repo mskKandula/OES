@@ -18,7 +18,7 @@ func NewStudentMySQLRepository(rc *RepositoryConfig) model.StudentRepository {
 }
 
 func (sr *studentMySQLRepository) Create(student *model.Student) error {
-	query, err := sr.MySQLDB.Prepare("INSERT INTO Students(name, email, mobileNo, password,clientId) VALUES(?,?,?,?)")
+	query, err := sr.MySQLDB.Prepare("INSERT INTO Students(name, email, mobileNo, password,clientId) VALUES(?,?,?,?,?)")
 	if err != nil {
 		return err
 	}

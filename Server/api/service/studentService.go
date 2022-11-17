@@ -121,12 +121,12 @@ func prepareResult(keys []string, vals []interface{}) gjson.Result {
 	return gjson.Parse(data)
 }
 
-func (ss *studentService) FetchStudents() ([]model.Student, error) {
-	return ss.StudentRepository.ReadAll()
+func (ss *studentService) FetchStudents(clientId string) ([]model.Student, error) {
+	return ss.StudentRepository.ReadAll(clientId)
 }
 
-func (ss *studentService) FetchAndPrepare(sheetName string) (*xlsx.File, error) {
-	students, err := ss.StudentRepository.ReadAll()
+func (ss *studentService) FetchAndPrepare(sheetName, clientId string) (*xlsx.File, error) {
+	students, err := ss.StudentRepository.ReadAll(clientId)
 	if err != nil {
 		return nil, err
 	}

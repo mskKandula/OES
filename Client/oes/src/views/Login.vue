@@ -620,8 +620,8 @@ export default {
         })
         .then(function (res) {
           if (res.data) {
-            sessionStorage.setItem(clientId, res.data.clientId)
-            if (res.data.userType === "User") {
+            sessionStorage.setItem("clientId", res.data.clientId)
+            if (res.data.userType === "Examiner") {
               self.$router.push({ path: "/dashboard" });
             } else {
               self.$router.push({ path: "/studentDashboard" });

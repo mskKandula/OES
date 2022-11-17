@@ -22,11 +22,11 @@ func NewCommonService(ssc *CommonServiceConfig) model.CommonService {
 func (cs *commonService) UserLogin(userLogin model.UserLogin) (int, string, string, error) {
 	id, userType, password, clientId, err := cs.CommonRepository.LoginUser(userLogin)
 	if err != nil {
-		return 0, "", err
+		return 0, "", "", err
 	}
 
 	if err := bcrypt.CompareHashAndPassword([]byte(password), []byte(userLogin.Password)); err != nil {
-		return 0, "", err
+		return 0, "", "", err
 	}
 	return id, userType, clientId, nil
 

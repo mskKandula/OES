@@ -20,7 +20,7 @@ func NewUserMySQLRepository(rc *RepositoryConfig) model.UserRepository {
 }
 
 func (ur *userMySQLRepository) Create(user model.User, password string) error {
-	query, err := ur.MySQLDB.Prepare("INSERT INTO Examiners(name, age, email, mobileNo, password,clientId) VALUES(?,?,?,?,?)")
+	query, err := ur.MySQLDB.Prepare("INSERT INTO Examiners(name, age, email, mobileNo, password,clientId) VALUES(?,?,?,?,?,?)")
 
 	if err != nil {
 		return err
@@ -28,7 +28,9 @@ func (ur *userMySQLRepository) Create(user model.User, password string) error {
 
 	id := uuid.New()
 
-	result, err := query.Exec(user.Name, user.Age, user.Email, user.MobileNo, password, strings.Replace(id.String(), "-", "", -1))
+	cid := strings.Replace(id.String(), "-", "", -1)
+
+	result, err := query.Exec(user.Name, user.Age, user.Email, user.MobileNo, password, cid)
 
 	if err != nil {
 		return err
@@ -48,7 +50,7 @@ func (ur *userMySQLRepository) Create(user model.User, password string) error {
 }
 
 func (ur *userMySQLRepository) CreateVideo(fileName, videoUrl, imagePath, clientId string) error {
-	query, err := ur.MySQLDB.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description,clientId) VALUES(?,?,?,?,?)")
+	query, err := ur.MySQLDB.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description,clientId) VALUES(?,?,?,?,?,?)")
 	if err != nil {
 		return err
 	}
