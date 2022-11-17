@@ -46,8 +46,24 @@ services:
       - default
     # We mount the working dir into the container, handy for development
     # This is what makes the hot reloading work inside of a Docker container
-    # volumes:
-    #   - .:/app/oes/
+    volumes:
+      - file_data:/app/OES
+
+  fileserver:
+    container_name: "oes_fileserver"
+    # we want to use the image which is build from our Dockerfile
+    build:
+      context: .
+      dockerfile: ./FileServer/Dockerfile
+    expose: ["8887"]
+    ports:
+     - "8887:8887"
+    networks:
+      - default
+    # We mount the working dir into the container, handy for development
+    # This is what makes the hot reloading work inside of a Docker container
+    volumes:
+      - file_data:/app/OES
 
   client:
    container_name: "oes_client"
@@ -61,6 +77,7 @@ services:
     - "8080:80"
    depends_on:
     - server
+    - fileserver
    links:
     - server
 
@@ -70,3 +87,4 @@ networks:
 volumes:
   mysql_data:
   cache_data:
+  file_data:
