@@ -1,21 +1,27 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/mskKandula/oes/api/model"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type userMySQLRepository struct {
-	MySQLDB *sql.DB
+	MySQLDB  *sql.DB
+	RabbitMQ *amqp.Channel
+	Queue    amqp.Queue
 }
 
 func NewUserMySQLRepository(rc *RepositoryConfig) model.UserRepository {
 	return &userMySQLRepository{
-		MySQLDB: rc.MySQLDB,
+		MySQLDB:  rc.MySQLDB,
+		RabbitMQ: rc.RabbitMQ,
+		Queue:    rc.Queue,
 	}
 }
 
@@ -56,6 +62,26 @@ func (ur *userMySQLRepository) CreateVideo(fileName, videoUrl, imagePath, client
 	}
 
 	_, err = query.Exec(fileName, videoUrl, imagePath, "video/mp4", "Sample Video", clientId)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (ur *userMySQLRepository) EncodeVideo(fileName string) error {
+
+	ctx := context.Background()
+
+	err := ur.RabbitMQ.PublishWithContext(ctx,
+		"",            // exchange
+		ur.Queue.Name, // routing key
+		false,         // mandatory
+		false,         // immediate
+		amqp.Publishing{
+			ContentType: "text/plain",
+			Body:        []byte(fileName),
+		})
+
 	if err != nil {
 		return err
 	}

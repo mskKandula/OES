@@ -22,7 +22,7 @@ func initSources() (*websock.Pool, *handler.Handler) {
 
 	h := handler.NewHandler(getUserService(ds), getStudentService(ds), getCommonService(ds))
 
-	go runningProcess.HlsVideoConversion(handler.BufChan)
+	// go runningProcess.HlsVideoConversion(handler.BufChan)
 
 	go runningProcess.UnzipFile(handler.ResultPaths)
 
@@ -83,7 +83,7 @@ func InitRouter() *gin.Engine {
 func getUserService(ds *ds.DataSources) model.UserService {
 
 	userMySQLRepository := repository.NewUserMySQLRepository(&repository.RepositoryConfig{
-		MySQLDB: ds.MySQLDB})
+		MySQLDB: ds.MySQLDB, RabbitMQ: ds.RabbitMQ, Queue: ds.Queue})
 
 	userService := service.NewUserService(&service.UserServiceConfig{
 		UserRepository: userMySQLRepository,

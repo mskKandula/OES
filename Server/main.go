@@ -52,7 +52,7 @@ func main() {
 	// fs := http.FileServer(http.Dir("../Client/oes/dist"))
 
 	defer func() {
-		close(handler.BufChan)
+		// close(handler.BufChan)
 		close(handler.ResultPaths)
 	}()
 

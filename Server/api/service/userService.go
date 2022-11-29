@@ -44,3 +44,11 @@ func (us *userService) CreateVideoFile(fileName, url, imagePath, clientId string
 	return nil
 
 }
+
+func (us *userService) EncodeVideoFile(fileName string) error {
+	if err := us.UserRepository.EncodeVideo(fileName); err != nil {
+		return err
+	}
+	return nil
+
+}

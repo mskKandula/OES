@@ -6,8 +6,9 @@ import (
 )
 
 type database struct {
-	MySQLDSN string `json:"MySqlDSN"`
-	RedisDSN string `json:"RedisDSN"`
+	MySQLDSN    string `json:"MySqlDSN"`
+	RedisDSN    string `json:"RedisDSN"`
+	RabbitMQDSN string `json:"RabbitMQDSN"`
 }
 
 type configuration struct {

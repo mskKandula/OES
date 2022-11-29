@@ -14,7 +14,7 @@ import (
 
 var (
 	fileTextLines []string
-	BufChan       = make(chan string, 10)
+	// BufChan       = make(chan string, 10)
 )
 
 func (h *Handler) SignUp(c *gin.Context) {
@@ -104,7 +104,11 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 		return
 	}
 
-	BufChan <- dstPath
+	err = h.UserService.EncodeVideoFile(dstPath)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 }
