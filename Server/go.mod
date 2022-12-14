@@ -17,6 +17,7 @@ require (
 )
 
 require (
+	github.com/aviddiviner/gin-limit v0.0.0-20170918012823-43b5f79762c1 // indirect
 	github.com/cespare/xxhash/v2 v2.1.2 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/frankban/quicktest v1.11.2 // indirect
