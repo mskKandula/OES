@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/mskKandula/oes/api/model"
@@ -22,7 +24,7 @@ func NewUserService(usc *UserServiceConfig) model.UserService {
 	}
 }
 
-func (us *userService) CreateUser(user model.User) error {
+func (us *userService) CreateUser(ctx context.Context, user model.User) error {
 	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
 		return err
@@ -30,15 +32,15 @@ func (us *userService) CreateUser(user model.User) error {
 
 	hashedPassword := string(hash)
 
-	if err = us.UserRepository.Create(user, hashedPassword); err != nil {
+	if err = us.UserRepository.Create(ctx, user, hashedPassword); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (us *userService) CreateVideoFile(fileName, url, imagePath, clientId string) error {
-	if err := us.UserRepository.CreateVideo(fileName, url, imagePath, clientId); err != nil {
+func (us *userService) CreateVideoFile(ctx context.Context, fileName, url, imagePath, clientId string) error {
+	if err := us.UserRepository.CreateVideo(ctx, fileName, url, imagePath, clientId); err != nil {
 		return err
 	}
 	return nil

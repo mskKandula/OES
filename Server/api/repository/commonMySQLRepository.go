@@ -24,7 +24,7 @@ func NewCommonMySQLRepository(rc *RepositoryConfig) model.CommonRepository {
 	}
 }
 
-func (cs *commonMySQLRepository) LoginUser(userLogin model.UserLogin) (int, string, string, string, error) {
+func (cs *commonMySQLRepository) LoginUser(ctx context.Context, userLogin model.UserLogin) (int, string, string, string, error) {
 
 	var (
 		id       int
@@ -33,13 +33,13 @@ func (cs *commonMySQLRepository) LoginUser(userLogin model.UserLogin) (int, stri
 		userType string = "Examiner"
 	)
 
-	row := cs.MySQLDB.QueryRow("select id,password,clientId from Examiners where email=?", userLogin.Email)
+	row := cs.MySQLDB.QueryRowContext(ctx, "select id,password,clientId from Examiners where email=?", userLogin.Email)
 
 	err := row.Scan(&id, &password, &clientId)
 
 	if err != nil {
 		if err == sql.ErrNoRows {
-			row := cs.MySQLDB.QueryRow("select id,password,clientId from Students where email=?", userLogin.Email)
+			row := cs.MySQLDB.QueryRowContext(ctx, "select id,password,clientId from Students where email=?", userLogin.Email)
 
 			err = row.Scan(&id, &password, &clientId)
 
@@ -54,7 +54,7 @@ func (cs *commonMySQLRepository) LoginUser(userLogin model.UserLogin) (int, stri
 	return id, userType, password, clientId, nil
 }
 
-func (cs *commonMySQLRepository) ReadRoutes(userId int, userType string) ([]model.Route, error) {
+func (cs *commonMySQLRepository) ReadRoutes(ctx context.Context, userId int, userType string) ([]model.Route, error) {
 
 	var routes []model.Route
 
@@ -74,7 +74,7 @@ func (cs *commonMySQLRepository) ReadRoutes(userId int, userType string) ([]mode
 	// 	select menuId from roleMenu where roleId =(
 	// 	select roleId from userRole where userId=?))`, val)
 
-	rows, err := cs.MySQLDB.Query(`SELECT m.id,m.name,m.url,m.description FROM Role r
+	rows, err := cs.MySQLDB.QueryContext(ctx, `SELECT m.id,m.name,m.url,m.description FROM Role r
     INNER JOIN UserRole ur ON r.id = ur.roleId
 	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
 	INNER JOIN Menu m ON rm.menuId = m.id
@@ -98,10 +98,9 @@ func (cs *commonMySQLRepository) ReadRoutes(userId int, userType string) ([]mode
 	return routes, nil
 }
 
-func (cs *commonMySQLRepository) ReadVideos(clientId string) ([]model.Video, error) {
+func (cs *commonMySQLRepository) ReadVideos(ctx context.Context, clientId string) ([]model.Video, error) {
 	var (
 		videos []model.Video
-		ctx    = context.Background()
 	)
 
 	val, err := cs.Redis.Get(ctx, clientId).Bytes()
@@ -116,7 +115,7 @@ func (cs *commonMySQLRepository) ReadVideos(clientId string) ([]model.Video, err
 		}
 	}
 
-	rows, err := cs.MySQLDB.Query(`SELECT name, videoUrl,thumbnailPath,description from VideoContent where clientId = ?`, clientId)
+	rows, err := cs.MySQLDB.QueryContext(ctx, `SELECT name, videoUrl,thumbnailPath,description from VideoContent where clientId = ?`, clientId)
 	if err != nil {
 		return videos, err
 	}

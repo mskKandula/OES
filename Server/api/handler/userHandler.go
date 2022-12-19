@@ -25,8 +25,8 @@ func (h *Handler) SignUp(c *gin.Context) {
 	}
 
 	// Users[user.Email] = user.Password
-
-	err := h.UserService.CreateUser(user)
+	ctx := c.Request.Context()
+	err := h.UserService.CreateUser(ctx, user)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -98,7 +98,9 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 	// 	return
 	// }
 	clientId := c.GetString("clientId")
-	if err = h.UserService.CreateVideoFile(paths[0], m3u8Path, imagePath, clientId); err != nil {
+	ctx := c.Request.Context()
+
+	if err = h.UserService.CreateVideoFile(ctx, paths[0], m3u8Path, imagePath, clientId); err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
 		return

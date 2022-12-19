@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 type User struct {
 	Name     string `json:"name" bson:"name" binding:"required" db:"name"`
 	Age      uint8  `json:"age,omitempty" bson:"age" binding:"gte=3,lte=100" db:"age"`
@@ -9,11 +11,11 @@ type User struct {
 }
 
 type UserService interface {
-	CreateUser(user User) error
-	CreateVideoFile(fileName, url, imagePath, clientId string) error
+	CreateUser(ctx context.Context, user User) error
+	CreateVideoFile(ctx context.Context, fileName, url, imagePath, clientId string) error
 }
 
 type UserRepository interface {
-	Create(user User, password string) error
-	CreateVideo(fileName, url, imagePath, clientId string) error
+	Create(ctx context.Context, user User, password string) error
+	CreateVideo(ctx context.Context, fileName, url, imagePath, clientId string) error
 }
