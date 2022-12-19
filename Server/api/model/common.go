@@ -1,5 +1,7 @@
 package model
 
+import "context"
+
 type UserLogin struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
@@ -20,13 +22,13 @@ type Video struct {
 }
 
 type CommonService interface {
-	UserLogin(UserLogin) (int, string, string, error)
-	GetRoutes(int, string) ([]Route, error)
-	GetVideos(string) ([]Video, error)
+	UserLogin(context.Context, UserLogin) (int, string, string, error)
+	GetRoutes(context.Context, int, string) ([]Route, error)
+	GetVideos(context.Context, string) ([]Video, error)
 }
 
 type CommonRepository interface {
-	LoginUser(UserLogin) (int, string, string, string, error)
-	ReadRoutes(int, string) ([]Route, error)
-	ReadVideos(string) ([]Video, error)
+	LoginUser(context.Context, UserLogin) (int, string, string, string, error)
+	ReadRoutes(context.Context, int, string) ([]Route, error)
+	ReadVideos(context.Context, string) ([]Video, error)
 }
