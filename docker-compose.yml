@@ -42,6 +42,8 @@ services:
     depends_on:
       - db
       - cache
+      - messageq
+
     networks:
       - default
     # We mount the working dir into the container, handy for development
@@ -80,6 +82,25 @@ services:
     - fileserver
    links:
     - server
+
+  mqserver:
+   container_name: "oes_mqserver"
+   build:
+    context: .
+    dockerfile: ./MQServer/Dockerfile
+   networks:
+    - default
+   volumes:
+      - file_data:/app/OES
+   restart: always
+   depends_on:
+    - messageq
+
+  messageq:
+    image: 'rabbitmq:3-management-alpine'
+    ports:
+      - "15672:15672"
+      - "5672:5672"
 
 networks:
   default:

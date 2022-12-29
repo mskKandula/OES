@@ -1,6 +1,7 @@
 {
   "database": {
     "MySqlDSN": "root:root@tcp(db:3306)/OES",
-    "RedisDSN": "redis://cache:6379/0"
+    "RedisDSN": "redis://cache:6379/0",
+    "RabbitMQDSN": "amqp://guest:guest@messageq/"
   }
 }
