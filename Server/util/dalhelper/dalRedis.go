@@ -4,6 +4,8 @@ import (
 	redis "github.com/go-redis/redis/v8"
 )
 
+//sudo service redis-server start
+
 var redisConnection *redis.Client
 
 func GetRedisConnection(redisDSN string) (*redis.Client, error) {

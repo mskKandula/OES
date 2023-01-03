@@ -23,16 +23,14 @@ RUN go build -o main .
 ########### Stage 2 ###########
 
 #Define the running image
-FROM alpine:3.13.1
+FROM alpine:3.17
 
 # For CDN to serve uploaded video files
 RUN mkdir -p /app/OES/media/video
 
 # Install git && ffmpeg
 RUN apk update && \
-    apk upgrade && \
-    apk add git && \
-    apk add --no-cache ffmpeg
+    apk upgrade
 
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/server

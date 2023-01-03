@@ -25,12 +25,11 @@ RUN go build -o files .
 ########### Stage 2 ###########
 
 #Define the running image
-FROM alpine:3.13.1
+FROM alpine:3.17
 
-# Install git && ffmpeg
+# Install
 RUN apk update && \
-    apk upgrade && \
-    apk add git
+    apk upgrade
 
 # Set the Current Working Directory inside the container
 WORKDIR /app/fileserver
