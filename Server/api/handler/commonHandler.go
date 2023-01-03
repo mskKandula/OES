@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/schema"
@@ -108,4 +109,10 @@ func (h *Handler) Logout(c *gin.Context) {
 		Path:   "/",
 	})
 
+}
+
+func (h *Handler) CheckStatus(c *gin.Context) {
+	currentTime := time.Now()
+	selfStatus := model.SelfStatus{StatusMessage: "runnning", ServerTime: currentTime}
+	c.JSON(http.StatusOK, selfStatus)
 }

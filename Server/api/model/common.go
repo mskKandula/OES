@@ -1,6 +1,9 @@
 package model
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type UserLogin struct {
 	Email    string `json:"email"`
@@ -19,6 +22,11 @@ type Video struct {
 	VideoUrl      string `json:"videoUrl"`
 	ThumbnailPath string `json:"thumbnailPath"`
 	Description   string `json:"description"`
+}
+
+type SelfStatus struct {
+	StatusMessage string
+	ServerTime    time.Time
 }
 
 type CommonService interface {
