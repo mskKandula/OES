@@ -7,11 +7,13 @@ import (
 	"github.com/mskKandula/oes/api/handler"
 	"github.com/mskKandula/oes/api/middleware"
 	"github.com/mskKandula/oes/api/model"
+	"github.com/mskKandula/oes/api/pkg/questgen/pb"
 	"github.com/mskKandula/oes/api/repository"
 	"github.com/mskKandula/oes/api/service"
 	ds "github.com/mskKandula/oes/dataSources"
 	"github.com/mskKandula/oes/util/runningProcess"
 	"github.com/mskKandula/oes/util/websock"
+	"google.golang.org/grpc"
 )
 
 func initSources() (*websock.Pool, *handler.Handler) {
@@ -20,7 +22,12 @@ func initSources() (*websock.Pool, *handler.Handler) {
 		log.Fatalf("Connection Failed to Open:%v", err.Error())
 	}
 
-	h := handler.NewHandler(getUserService(ds), getStudentService(ds), getCommonService(ds))
+	client, err := InitGrpcServiceClient()
+	if err != nil {
+		log.Fatalf("Connection Failed to Open:%v", err.Error())
+	}
+
+	h := handler.NewHandler(getUserService(ds, client), getStudentService(ds), getCommonService(ds))
 
 	go runningProcess.HlsVideoConversion(handler.BufChan)
 
@@ -65,6 +72,7 @@ func InitRouter() *gin.Engine {
 		user.POST("/multipleStudentsRegistration", h.StudentsRegister)
 		user.POST("/uploadQuestionFile", h.QuestionsUpload)
 		user.POST("/uploadVideoContent", h.VideoUpload)
+		user.POST("/questionGeneration", h.QuestionGen)
 
 		user.GET("/getStudents", h.GetStudents)
 		user.GET("/downloadStudents", h.DownloadStudents)
@@ -81,13 +89,14 @@ func InitRouter() *gin.Engine {
 	return r
 }
 
-func getUserService(ds *ds.DataSources) model.UserService {
+func getUserService(ds *ds.DataSources, client pb.QuestGenServiceClient) model.UserService {
 
 	userMySQLRepository := repository.NewUserMySQLRepository(&repository.RepositoryConfig{
 		MySQLDB: ds.MySQLDB})
 
 	userService := service.NewUserService(&service.UserServiceConfig{
 		UserRepository: userMySQLRepository,
+		QuestgenClient: client,
 	})
 
 	return userService
@@ -115,4 +124,15 @@ func getCommonService(ds *ds.DataSources) model.CommonService {
 	})
 
 	return commonService
+}
+
+func InitGrpcServiceClient() (pb.QuestGenServiceClient, error) {
+	// using WithInsecure() because no SSL running
+	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	// defer conn.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	return pb.NewQuestGenServiceClient(conn), nil
 }

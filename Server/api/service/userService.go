@@ -6,21 +6,25 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/mskKandula/oes/api/model"
+	"github.com/mskKandula/oes/api/pkg/questgen/pb"
 )
 
 type userService struct {
 	UserRepository model.UserRepository
+	QuestgenClient pb.QuestGenServiceClient
 }
 
 // UserServiceCOnfig will hold repositories that will eventually be injected into this
 // this service layer
 type UserServiceConfig struct {
 	UserRepository model.UserRepository
+	QuestgenClient pb.QuestGenServiceClient
 }
 
 func NewUserService(usc *UserServiceConfig) model.UserService {
 	return &userService{
 		UserRepository: usc.UserRepository,
+		QuestgenClient: usc.QuestgenClient,
 	}
 }
 
@@ -44,5 +48,15 @@ func (us *userService) CreateVideoFile(ctx context.Context, fileName, url, image
 		return err
 	}
 	return nil
+
+}
+
+func (us *userService) GenQuestion(ctx context.Context, requestData string) (string, error) {
+	r, err := us.QuestgenClient.QuestGen(ctx, &pb.QuestGenRequest{Request: requestData})
+	if err != nil {
+		return "", err
+	}
+
+	return r.GetResponse(), nil
 
 }
