@@ -1,0 +1,22 @@
+syntax ="proto3";
+
+package questgen;
+
+option go_package="./pkg/questgen/pb";
+
+
+message QuestGenRequest{
+    string request=1;
+}
+
+message QuestGenResponse{
+    string response =1;
+}
+
+service QuestGenService{
+    // Unary
+    rpc QuestGen(QuestGenRequest)returns(QuestGenResponse){};
+}
+
+//In proto file folder
+//python -m grpc_tools.protoc --proto_path=. ./questgen.proto --python_out=. --grpc_python_out=.
