@@ -10,9 +10,13 @@ type User struct {
 	Password string `json:"password" bson:"password" binding:"required" db:"password"`
 }
 
+type QuestionRequest struct {
+	Paragraph string `json:"paragraph" bson:"paragraph" binding:"required" db:"paragraph"`
+}
 type UserService interface {
 	CreateUser(ctx context.Context, user User) error
 	CreateVideoFile(ctx context.Context, fileName, url, imagePath, clientId string) error
+	GenQuestion(ctx context.Context, data string) (string, error)
 }
 
 type UserRepository interface {

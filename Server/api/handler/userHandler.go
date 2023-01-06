@@ -161,3 +161,20 @@ func Create(path string) (*os.File, error) {
 	}
 	return os.Create(path)
 }
+
+func (h *Handler) QuestionGen(c *gin.Context) {
+	questionRequest := model.QuestionRequest{}
+	if err := c.ShouldBindJSON(&questionRequest); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+	resp, err := h.UserService.GenQuestion(ctx, questionRequest.Paragraph)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"Questions": resp})
+}
