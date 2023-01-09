@@ -45,10 +45,10 @@ func (us *userService) CreateVideoFile(fileName, url, imagePath, clientId string
 
 }
 
-func (us *userService) EncodeVideoFile(fileName string) error {
-	if err := us.UserRepository.EncodeVideo(fileName); err != nil {
-		return err
-	}
-	return nil
+// func (us *userService) EncodeVideoFile(fileName string) error {
+// 	if err := us.UserRepository.EncodeVideo(fileName); err != nil {
+// 		return err
+// 	}
+// 	return nil
 
-}
+// }

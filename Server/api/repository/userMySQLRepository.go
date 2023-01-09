@@ -56,34 +56,37 @@ func (ur *userMySQLRepository) Create(user model.User, password string) error {
 }
 
 func (ur *userMySQLRepository) CreateVideo(fileName, videoUrl, imagePath, clientId string) error {
-	query, err := ur.MySQLDB.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description,clientId) VALUES(?,?,?,?,?,?)")
-	if err != nil {
+
+	err := WithTransaction(ur.MySQLDB, func(tx *sql.Tx) error {
+		// Insert into DB
+		query, err := tx.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description,clientId) VALUES(?,?,?,?,?,?)")
+		if err != nil {
+			return err
+		}
+
+		_, err = query.Exec(fileName, videoUrl, imagePath, "video/mp4", "Sample Video", clientId)
+		if err != nil {
+			return err
+		}
+
+		ctx := context.Background()
+		// Send message to queue
+		err = ur.RabbitMQ.PublishWithContext(ctx,
+			"",            // exchange
+			ur.Queue.Name, // routing key
+			false,         // mandatory
+			false,         // immediate
+			amqp.Publishing{
+				ContentType: "text/plain",
+				Body:        []byte(fileName),
+			})
+
+		if err != nil {
+			return err
+		}
+
 		return err
-	}
+	})
 
-	_, err = query.Exec(fileName, videoUrl, imagePath, "video/mp4", "Sample Video", clientId)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func (ur *userMySQLRepository) EncodeVideo(fileName string) error {
-
-	ctx := context.Background()
-
-	err := ur.RabbitMQ.PublishWithContext(ctx,
-		"",            // exchange
-		ur.Queue.Name, // routing key
-		false,         // mandatory
-		false,         // immediate
-		amqp.Publishing{
-			ContentType: "text/plain",
-			Body:        []byte(fileName),
-		})
-
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
