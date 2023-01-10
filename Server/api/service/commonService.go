@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+
 	"github.com/mskKandula/oes/api/model"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,8 +21,8 @@ func NewCommonService(ssc *CommonServiceConfig) model.CommonService {
 	}
 }
 
-func (cs *commonService) UserLogin(userLogin model.UserLogin) (int, string, string, error) {
-	id, userType, password, clientId, err := cs.CommonRepository.LoginUser(userLogin)
+func (cs *commonService) UserLogin(ctx context.Context, userLogin model.UserLogin) (int, string, string, error) {
+	id, userType, password, clientId, err := cs.CommonRepository.LoginUser(ctx, userLogin)
 	if err != nil {
 		return 0, "", "", err
 	}
@@ -32,9 +34,9 @@ func (cs *commonService) UserLogin(userLogin model.UserLogin) (int, string, stri
 
 }
 
-func (cs *commonService) GetRoutes(id int, uType string) ([]model.Route, error) {
+func (cs *commonService) GetRoutes(ctx context.Context, id int, uType string) ([]model.Route, error) {
 
-	routes, err := cs.CommonRepository.ReadRoutes(id, uType)
+	routes, err := cs.CommonRepository.ReadRoutes(ctx, id, uType)
 	if err != nil {
 		return routes, err
 	}
@@ -43,9 +45,9 @@ func (cs *commonService) GetRoutes(id int, uType string) ([]model.Route, error) 
 
 }
 
-func (cs *commonService) GetVideos(clientId string) ([]model.Video, error) {
+func (cs *commonService) GetVideos(ctx context.Context, clientId string) ([]model.Video, error) {
 
-	videos, err := cs.CommonRepository.ReadVideos(clientId)
+	videos, err := cs.CommonRepository.ReadVideos(ctx, clientId)
 	if err != nil {
 		return videos, err
 	}

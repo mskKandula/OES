@@ -21,7 +21,9 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	id, userType, clientId, err := h.CommonService.UserLogin(userLogin)
+	ctx := c.Request.Context()
+
+	id, userType, clientId, err := h.CommonService.UserLogin(ctx, userLogin)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 		return
@@ -47,8 +49,9 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) GetAllRoutes(c *gin.Context) {
 	userId := c.GetInt("userId")
 	userType := c.GetString("userType")
+	ctx := c.Request.Context()
 
-	routes, err := h.CommonService.GetRoutes(userId, userType)
+	routes, err := h.CommonService.GetRoutes(ctx, userId, userType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -58,7 +61,9 @@ func (h *Handler) GetAllRoutes(c *gin.Context) {
 
 func (h *Handler) GetAllVideos(c *gin.Context) {
 	clientId := c.GetString("clientId")
-	videos, err := h.CommonService.GetVideos(clientId)
+	ctx := c.Request.Context()
+
+	videos, err := h.CommonService.GetVideos(ctx, clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

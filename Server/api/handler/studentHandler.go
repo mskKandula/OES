@@ -18,6 +18,7 @@ func (h *Handler) StudentsRegister(c *gin.Context) {
 	// defer file.Close()
 
 	clientId := c.GetString("clientId")
+	ctx := c.Request.Context()
 
 	file, err := c.FormFile("myFile")
 
@@ -50,7 +51,7 @@ func (h *Handler) StudentsRegister(c *gin.Context) {
 		return
 	}
 
-	students, err := h.StudentService.CreateStudents(fileBytes, clientId)
+	students, err := h.StudentService.CreateStudents(ctx, fileBytes, clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -61,7 +62,9 @@ func (h *Handler) StudentsRegister(c *gin.Context) {
 
 func (h *Handler) GetStudents(c *gin.Context) {
 	clientId := c.GetString("clientId")
-	students, err := h.StudentService.FetchStudents(clientId)
+	ctx := c.Request.Context()
+
+	students, err := h.StudentService.FetchStudents(ctx, clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -72,7 +75,9 @@ func (h *Handler) GetStudents(c *gin.Context) {
 
 func (h *Handler) DownloadStudents(c *gin.Context) {
 	clientId := c.GetString("clientId")
-	file, err := h.StudentService.FetchAndPrepare("All Students Details", clientId)
+	ctx := c.Request.Context()
+
+	file, err := h.StudentService.FetchAndPrepare(ctx, "All Students Details", clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -88,9 +93,11 @@ func (h *Handler) DownloadStudents(c *gin.Context) {
 	c.Writer.Header().Set("Content-Transfer-Encoding", "binary")
 	file.Write(c.Writer)
 }
+
 func (h *Handler) GetQuestions(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines})
 }
+
 func (h *Handler) UploadExamProof(c *gin.Context) {
 	file, err := c.FormFile("zipFile")
 

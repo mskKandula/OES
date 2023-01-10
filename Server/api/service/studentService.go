@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"strings"
@@ -40,7 +41,7 @@ func NewStudentService(ssc *StudentServiceConfig) model.StudentService {
 	}
 }
 
-func (ss *studentService) CreateStudents(byteArray []byte, clientId string) ([]model.Student, error) {
+func (ss *studentService) CreateStudents(ctx context.Context, byteArray []byte, clientId string) ([]model.Student, error) {
 
 	result, err := excelToJson(byteArray)
 	if err != nil {
@@ -62,7 +63,7 @@ func (ss *studentService) CreateStudents(byteArray []byte, clientId string) ([]m
 
 		student := model.Student{name, email, mobile, hashedPassword, clientId}
 
-		if err = ss.StudentRepository.Create(&student); err != nil {
+		if err = ss.StudentRepository.Create(ctx, &student); err != nil {
 			return nil, err
 		}
 
@@ -121,12 +122,12 @@ func prepareResult(keys []string, vals []interface{}) gjson.Result {
 	return gjson.Parse(data)
 }
 
-func (ss *studentService) FetchStudents(clientId string) ([]model.Student, error) {
-	return ss.StudentRepository.ReadAll(clientId)
+func (ss *studentService) FetchStudents(ctx context.Context, clientId string) ([]model.Student, error) {
+	return ss.StudentRepository.ReadAll(ctx, clientId)
 }
 
-func (ss *studentService) FetchAndPrepare(sheetName, clientId string) (*xlsx.File, error) {
-	students, err := ss.StudentRepository.ReadAll(clientId)
+func (ss *studentService) FetchAndPrepare(ctx context.Context, sheetName, clientId string) (*xlsx.File, error) {
+	students, err := ss.StudentRepository.ReadAll(ctx, clientId)
 	if err != nil {
 		return nil, err
 	}
