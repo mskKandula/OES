@@ -55,7 +55,7 @@ func (ur *userMySQLRepository) Create(user model.User, password string) error {
 	return nil
 }
 
-func (ur *userMySQLRepository) CreateVideo(fileName, videoUrl, imagePath, clientId string) error {
+func (ur *userMySQLRepository) CreateVideo(fileName, videoUrl, imagePath, clientId, dstpath string) error {
 
 	err := WithTransaction(ur.MySQLDB, func(tx *sql.Tx) error {
 		// Insert into DB
@@ -78,7 +78,7 @@ func (ur *userMySQLRepository) CreateVideo(fileName, videoUrl, imagePath, client
 			false,         // immediate
 			amqp.Publishing{
 				ContentType: "text/plain",
-				Body:        []byte(fileName),
+				Body:        []byte(dstpath),
 			})
 
 		if err != nil {

@@ -98,7 +98,7 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 	// 	return
 	// }
 	clientId := c.GetString("clientId")
-	if err = h.UserService.CreateVideoFile(paths[0], m3u8Path, imagePath, clientId); err != nil {
+	if err = h.UserService.CreateVideoFile(paths[0], m3u8Path, imagePath, clientId, dstPath); err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
 		return
