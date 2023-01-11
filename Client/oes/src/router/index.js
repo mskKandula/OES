@@ -142,6 +142,14 @@ const routes = [
           title: "BroadcastVideo",
         },
       },
+      {
+        path: "/questionGen",
+        name: "QuestionGen",
+        component: loadView("QuestionGen"),
+        meta: {
+          title: "QuestionGen",
+        },
+      },
     ],
   },
 ];
