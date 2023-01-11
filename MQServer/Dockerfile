@@ -6,20 +6,20 @@ RUN apk update && \
     apk add git
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/fileserver
+WORKDIR /app/mqServer
 
 # We want to populate the module cache based on the go.{mod,sum} files.
-COPY ./FileServer/go.mod .
+COPY ./MQServer/go.mod .
 
 # To keep only actual dependencies
 RUN go mod tidy
 
 RUN go mod download
 
-COPY ./FileServer/ .
+COPY ./MQServer/ .
 
 # Build the Go app
-RUN go build -o files .
+RUN go build -o main .
 
 
 ########### Stage 2 ###########
@@ -27,18 +27,19 @@ RUN go build -o files .
 #Define the running image
 FROM alpine:3.17
 
-# Install
+# Install git && ffmpeg
 RUN apk update && \
-    apk upgrade
+    apk upgrade && \
+    apk add --no-cache ffmpeg
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/fileserver
+WORKDIR /app/mqServer
 
 # Copy built binary application from 'builder' image
-COPY --from=builder1 /app/fileserver/files .
+COPY --from=builder1 /app/mqServer/main .
 
-# This container exposes port 8080 to the outside world
-EXPOSE 8887
+# This container exposes port 5672 to the outside world
+# EXPOSE 5672
 
 # Run the binary program produced by `go install`
-CMD ["./files"]
+CMD ["./main"]

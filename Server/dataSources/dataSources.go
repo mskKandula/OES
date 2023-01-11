@@ -8,11 +8,14 @@ import (
 	"github.com/mskKandula/oes/util/dalhelper"
 
 	redis "github.com/go-redis/redis/v8"
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 type DataSources struct {
-	MySQLDB *sql.DB
-	Redis   *redis.Client
+	MySQLDB  *sql.DB
+	Redis    *redis.Client
+	RabbitMQ *amqp.Channel
+	Queue    amqp.Queue
 }
 
 //InitDS initializes  all required data sources.
@@ -28,8 +31,15 @@ func InitDS() (*DataSources, error) {
 		return nil, fmt.Errorf("error opening redis : %w", err)
 	}
 
+	rabbitMQ, queue, err := dalhelper.GetRabbitMQConnection(config.DatabaseConfig.RabbitMQDSN)
+	if err != nil {
+		return nil, fmt.Errorf("error opening rabbitMQ : %w", err)
+	}
+
 	return &DataSources{
-		MySQLDB: mySQLDB,
-		Redis:   redis,
+		MySQLDB:  mySQLDB,
+		Redis:    redis,
+		RabbitMQ: rabbitMQ,
+		Queue:    queue,
 	}, nil
 }

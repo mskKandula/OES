@@ -48,12 +48,17 @@ INSERT INTO `Role`(`name`) VALUES('Examiner'),('Student');
 
 CREATE TABLE `UserRole` (  
     userId INT NOT NULL,  
-    roleId INT NOT NULL
+    roleId INT NOT NULL,
+    FOREIGN KEY(`roleId`) REFERENCES Role(`id`),
+    PRIMARY KEY(`userId`, `roleId`)
 );
 
 CREATE TABLE `RoleMenu` (  
     roleId INT NOT NULL,  
-    menuId INT NOT NULL
+    menuId INT NOT NULL,
+    FOREIGN KEY(`roleId`) REFERENCES Role(`id`),
+    FOREIGN KEY(`menuId`) REFERENCES Menu(`id`),
+    PRIMARY KEY(`roleId`, `menuId`)
 );
 
 INSERT INTO `RoleMenu`(`roleId`,`menuId`) VALUES(2,6),(2,7),(2,8),(2,9),(2,11);

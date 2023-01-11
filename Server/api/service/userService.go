@@ -43,8 +43,8 @@ func (us *userService) CreateUser(ctx context.Context, user model.User) error {
 	return nil
 }
 
-func (us *userService) CreateVideoFile(ctx context.Context, fileName, url, imagePath, clientId string) error {
-	if err := us.UserRepository.CreateVideo(ctx, fileName, url, imagePath, clientId); err != nil {
+func (us *userService) CreateVideoFile(ctx context.Context, fileName, url, imagePath, clientId, dstPath string) error {
+	if err := us.UserRepository.CreateVideo(ctx, fileName, url, imagePath, clientId, dstPath); err != nil {
 		return err
 	}
 	return nil
@@ -60,3 +60,11 @@ func (us *userService) GenQuestion(ctx context.Context, requestData string) (str
 	return r.GetResponse(), nil
 
 }
+
+// func (us *userService) EncodeVideoFile(fileName string) error {
+// 	if err := us.UserRepository.EncodeVideo(fileName); err != nil {
+// 		return err
+// 	}
+// 	return nil
+
+// }

@@ -14,7 +14,7 @@ import (
 
 var (
 	fileTextLines []string
-	BufChan       = make(chan string, 10)
+	// BufChan       = make(chan string, 10)
 )
 
 func (h *Handler) SignUp(c *gin.Context) {
@@ -100,13 +100,17 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 	clientId := c.GetString("clientId")
 	ctx := c.Request.Context()
 
-	if err = h.UserService.CreateVideoFile(ctx, paths[0], m3u8Path, imagePath, clientId); err != nil {
+	if err = h.UserService.CreateVideoFile(ctx, paths[0], m3u8Path, imagePath, clientId, dstPath); err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
 		return
 	}
 
-	BufChan <- dstPath
+	// err = h.UserService.EncodeVideoFile(dstPath)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 }

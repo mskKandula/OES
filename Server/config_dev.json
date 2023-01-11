@@ -1,6 +1,7 @@
 {
   "database": {
     "MySqlDSN": "root:root@123456789@tcp(localhost:3306)/OES",
-    "RedisDSN": "redis://localhost:6379/0"
+    "RedisDSN": "redis://localhost:6379/0",
+    "RabbitMQDSN": "amqp://guest:guest@localhost:5672/"
   }
 }
