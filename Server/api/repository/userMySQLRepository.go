@@ -26,38 +26,46 @@ func NewUserMySQLRepository(rc *RepositoryConfig) model.UserRepository {
 }
 
 func (ur *userMySQLRepository) Create(ctx context.Context, user model.User, password string) error {
-	query, err := ur.MySQLDB.Prepare("INSERT INTO Examiners(name, age, email, mobileNo, password,clientId) VALUES(?,?,?,?,?,?)")
 
-	if err != nil {
+	err := withTransaction(ur.MySQLDB, func(tx *sql.Tx) error {
+		query, err := tx.Prepare("INSERT INTO Examiners(name, age, email, mobileNo, password,clientId) VALUES(?,?,?,?,?,?)")
+		if err != nil {
+			return err
+		}
+
+		id := uuid.New()
+
+		cid := strings.Replace(id.String(), "-", "", -1)
+
+		result, err := query.ExecContext(ctx, user.Name, user.Age, user.Email, user.MobileNo, password, cid)
+		if err != nil {
+			return err
+		}
+
+		lId, err := result.LastInsertId()
+		if err != nil {
+			return err
+		}
+
+		query, err = tx.Prepare("INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
+		if err != nil {
+			return err
+		}
+
+		_, err = query.ExecContext(ctx, lId, 1)
+		if err != nil {
+			return err
+		}
+
 		return err
-	}
+	})
 
-	id := uuid.New()
-
-	cid := strings.Replace(id.String(), "-", "", -1)
-
-	result, err := query.ExecContext(ctx, user.Name, user.Age, user.Email, user.MobileNo, password, cid)
-
-	if err != nil {
-		return err
-	}
-
-	lId, _ := result.LastInsertId()
-
-	query, err = ur.MySQLDB.Prepare("INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
-
-	if err != nil {
-		return err
-	}
-
-	query.ExecContext(ctx, lId, 1)
-
-	return nil
+	return err
 }
 
 func (ur *userMySQLRepository) CreateVideo(ctx context.Context, fileName, videoUrl, imagePath, clientId, dstpath string) error {
 
-	err := WithTransaction(ur.MySQLDB, func(tx *sql.Tx) error {
+	err := withTransaction(ur.MySQLDB, func(tx *sql.Tx) error {
 		// Insert into DB
 		query, err := tx.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description,clientId) VALUES(?,?,?,?,?,?)")
 		if err != nil {

@@ -19,26 +19,37 @@ func NewStudentMySQLRepository(rc *RepositoryConfig) model.StudentRepository {
 }
 
 func (sr *studentMySQLRepository) Create(ctx context.Context, student *model.Student) error {
-	query, err := sr.MySQLDB.Prepare("INSERT INTO Students(name, email, mobileNo, password,clientId) VALUES(?,?,?,?,?)")
-	if err != nil {
+
+	err := withTransaction(sr.MySQLDB, func(tx *sql.Tx) error {
+		query, err := tx.Prepare("INSERT INTO Students(name, email, mobileNo, password,clientId) VALUES(?,?,?,?,?)")
+		if err != nil {
+			return err
+		}
+
+		result, err := query.ExecContext(ctx, student.Name, student.Email, student.Mobile, student.Password, student.ClientId)
+		if err != nil {
+			return err
+		}
+
+		lId, err := result.LastInsertId()
+		if err != nil {
+			return err
+		}
+
+		query, err = tx.Prepare("INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
+		if err != nil {
+			return err
+		}
+
+		_, err = query.ExecContext(ctx, lId, 2)
+		if err != nil {
+			return err
+		}
+
 		return err
-	}
+	})
 
-	result, err := query.ExecContext(ctx, student.Name, student.Email, student.Mobile, student.Password, student.ClientId)
-	if err != nil {
-		return err
-	}
-
-	lId, _ := result.LastInsertId()
-
-	query, err = sr.MySQLDB.Prepare("INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
-	if err != nil {
-		return err
-	}
-
-	query.ExecContext(ctx, lId, 2)
-
-	return nil
+	return err
 }
 
 func (sr *studentMySQLRepository) ReadAll(ctx context.Context, clientId string) ([]model.Student, error) {

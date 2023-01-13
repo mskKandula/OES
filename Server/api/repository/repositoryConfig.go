@@ -24,7 +24,8 @@ type RepositoryConfig struct {
 
 type TxFn func(*sql.Tx) error
 
-func WithTransaction(db *sql.DB, fn TxFn) (err error) {
+//Not an exported one.
+func withTransaction(db *sql.DB, fn TxFn) (err error) {
 	tx, err := db.Begin()
 	if err != nil {
 		return err
