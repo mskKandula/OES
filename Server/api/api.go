@@ -4,6 +4,7 @@ import (
 	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mskKandula/oes/api/config"
 	"github.com/mskKandula/oes/api/handler"
 	"github.com/mskKandula/oes/api/middleware"
 	"github.com/mskKandula/oes/api/model"
@@ -128,7 +129,7 @@ func getCommonService(ds *ds.DataSources) model.CommonService {
 
 func InitGrpcServiceClient() (pb.QuestGenServiceClient, error) {
 	// using WithInsecure() because no SSL running
-	conn, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	conn, err := grpc.Dial(config.DatabaseConfig.GRPCDSN, grpc.WithInsecure())
 	// defer conn.Close()
 	if err != nil {
 		return nil, err

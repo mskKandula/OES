@@ -9,6 +9,7 @@ type database struct {
 	MySQLDSN    string `json:"MySqlDSN"`
 	RedisDSN    string `json:"RedisDSN"`
 	RabbitMQDSN string `json:"RabbitMQDSN"`
+	GRPCDSN     string `json:"GRPCDSN"`
 }
 
 type configuration struct {
