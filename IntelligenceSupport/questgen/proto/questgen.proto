@@ -19,4 +19,4 @@ service QuestGenService{
 }
 
 //In proto file folder
-//python -m grpc_tools.protoc --proto_path=. ./questgen.proto --python_out=. --grpc_python_out=.
+//python -m grpc_tools.protoc --proto_path=. ./questgen.proto --python_out=../questgen/pb --grpc_python_out=../questgen/pb
