@@ -43,6 +43,7 @@ services:
       - db
       - cache
       - messageq
+      - isupport
 
     networks:
       - default
@@ -106,6 +107,18 @@ services:
       RABBITMQ_DEFAULT_USER: "rabbitmq"
       RABBITMQ_DEFAULT_PASS: "rabbitmq"
       RABBITMQ_DEFAULT_VHOST: "/"
+
+  isupport:
+    container_name: "oes_isupport"
+    ports:
+      - "50051:50051"
+    build:
+      context: .
+      dockerfile: ./IntelligenceSupport/questgen/Dockerfile
+    networks:
+     - default
+    restart: always
+
 
 networks:
   default:
