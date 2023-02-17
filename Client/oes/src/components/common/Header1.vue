@@ -180,6 +180,7 @@ export default {
         "mdi mdi-video-plus list-icon",
         "mdi mdi-monitor-dashboard list-icon",
         "mdi mdi-video-plus list-icon",
+        "mdi mdi-integration-instructions list-icon",
       ],
     };
   },
