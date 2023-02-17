@@ -14,7 +14,7 @@ export default {
     };
   },
   created() {
-    this.videoUrl = this.$route.params.videoUrl;
+    this.videoUrl = this.$route.params.videoUrl ? this.$route.params.videoUrl : "/media/video/liveData/test.m3u8" ;
   },
   mounted() {
     this.hls = new Hls();

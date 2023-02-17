@@ -60,6 +60,11 @@ VALUES ('Dashboard', '/dashboard', 'Dashboard'),
         'Generate Questions',
         '/questionGen',
         'GenerateQuestions'
+    ),
+    (
+        'Live Video',
+        '/playVideo',
+        'Live Video'
     );
 CREATE TABLE `Role` (
     id INT NOT NULL AUTO_INCREMENT,
@@ -96,7 +101,8 @@ VALUES(1, 1),
     (1, 5),
     (1, 9),
     (1, 10),
-    (1, 12);
+    (1, 12),
+    (1, 13);
 CREATE TABLE `VideoContent`(
     id INT NOT NULL AUTO_INCREMENT,
     name VARCHAR(45) NOT NULL,
@@ -107,3 +113,5 @@ CREATE TABLE `VideoContent`(
     clientId VARCHAR(100) NOT NULL,
     PRIMARY KEY (`id`)
 );
+-- mysql -u root -p
+-- root

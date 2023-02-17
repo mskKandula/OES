@@ -119,6 +119,19 @@ services:
      - default
     restart: always
 
+  liveserver:
+    container_name: "oes_liveserver"
+    ports:
+      - "1935:1935"
+    build:
+      context: .
+      dockerfile: ./LiveStreamingServer/Dockerfile
+    networks:
+     - default
+    volumes:
+      - ./media/video/liveData:/mnt/hls
+    restart: always
+
 
 networks:
   default:
