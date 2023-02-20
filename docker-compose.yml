@@ -51,6 +51,7 @@ services:
     # This is what makes the hot reloading work inside of a Docker container
     volumes:
       - ./media:/app/OES/media
+    restart: always
 
   fileserver:
     container_name: "oes_fileserver"
@@ -67,6 +68,7 @@ services:
     # This is what makes the hot reloading work inside of a Docker container
     volumes:
       - ./media:/app/OES/media
+    restart: always
 
   client:
    container_name: "oes_client"
