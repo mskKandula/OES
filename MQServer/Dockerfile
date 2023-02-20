@@ -6,7 +6,7 @@ RUN apk update && \
     apk add git
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/mqServer
+WORKDIR /app/OES/mqServer
 
 # We want to populate the module cache based on the go.{mod,sum} files.
 COPY ./MQServer/go.mod .
@@ -33,10 +33,10 @@ RUN apk update && \
     apk add --no-cache ffmpeg
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/mqServer
+WORKDIR /app/OES/mqServer
 
 # Copy built binary application from 'builder' image
-COPY --from=builder1 /app/mqServer/main .
+COPY --from=builder1 /app/OES/mqServer/main .
 
 # This container exposes port 5672 to the outside world
 # EXPOSE 5672

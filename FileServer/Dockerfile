@@ -6,7 +6,7 @@ RUN apk update && \
     apk add git
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/fileserver
+WORKDIR /app/OES/fileserver
 
 # We want to populate the module cache based on the go.{mod,sum} files.
 COPY ./FileServer/go.mod .
@@ -32,10 +32,10 @@ RUN apk update && \
     apk upgrade
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/fileserver
+WORKDIR /app/OES/fileserver
 
 # Copy built binary application from 'builder' image
-COPY --from=builder1 /app/fileserver/files .
+COPY --from=builder1 /app/OES/fileserver/files .
 
 # This container exposes port 8080 to the outside world
 EXPOSE 8887
