@@ -17,6 +17,10 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	maxWorkers int = 10
+)
+
 func initSources() (*websock.Pool, *handler.Handler) {
 	ds, err := ds.InitDS()
 	if err != nil {
@@ -31,8 +35,10 @@ func initSources() (*websock.Pool, *handler.Handler) {
 	h := handler.NewHandler(getUserService(ds, client), getStudentService(ds), getCommonService(ds))
 
 	// go runningProcess.HlsVideoConversion(handler.BufChan)
-
-	go runningProcess.UnzipFile(handler.ResultPaths)
+	// Worker Pool
+	for i := 0; i < maxWorkers; i++ {
+		go runningProcess.UnzipFile(handler.ResultPaths)
+	}
 
 	pool := websock.NewPool()
 

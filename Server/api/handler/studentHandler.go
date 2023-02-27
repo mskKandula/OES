@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	ResultPaths = make(chan string, 20)
+	ResultPaths = make(chan string, 200)
 )
 
 func (h *Handler) StudentsRegister(c *gin.Context) {
