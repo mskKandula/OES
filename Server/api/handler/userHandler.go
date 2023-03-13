@@ -155,6 +155,14 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
 
+	clientId := c.GetString("clientId")
+	ctx := c.Request.Context()
+
+	if err = h.UserService.CreateExam(ctx, clientId); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to insert exam data"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines})
 }
 

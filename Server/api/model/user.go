@@ -17,9 +17,11 @@ type UserService interface {
 	CreateUser(ctx context.Context, user User) error
 	CreateVideoFile(ctx context.Context, fileName, url, imagePath, clientId, dstPath string) error
 	GenQuestion(ctx context.Context, data string) (string, error)
+	CreateExam(ctx context.Context, clientId string) error
 }
 
 type UserRepository interface {
 	Create(ctx context.Context, user User, password string) error
 	CreateVideo(ctx context.Context, fileName, url, imagePath, clientId, dstPath string) error
+	ExamCreation(ctx context.Context, clientId string) error
 }

@@ -61,10 +61,10 @@ func (us *userService) GenQuestion(ctx context.Context, requestData string) (str
 
 }
 
-// func (us *userService) EncodeVideoFile(fileName string) error {
-// 	if err := us.UserRepository.EncodeVideo(fileName); err != nil {
-// 		return err
-// 	}
-// 	return nil
+func (us *userService) CreateExam(ctx context.Context, clientId string) error {
+	if err := us.UserRepository.ExamCreation(ctx, clientId); err != nil {
+		return err
+	}
 
-// }
+	return nil
+}
