@@ -113,9 +113,14 @@ CREATE TABLE `VideoContent`(
     clientId VARCHAR(100) NOT NULL,
     PRIMARY KEY (`id`)
 );
-create table `Exam`(
+create table `Exams`(
     id INT NOT NULL AUTO_INCREMENT,
     clientId VARCHAR(100) NOT NULL,
+    createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+create table `ExamProofs`(
+    id INT NOT NULL AUTO_INCREMENT,
+    imagePath VARCHAR(100) NOT NULL,
     createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 -- mysql -u root -p

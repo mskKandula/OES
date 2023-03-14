@@ -2,6 +2,7 @@ package handler
 
 import (
 	"io"
+	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -9,8 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type ProofData struct {
+	ClientId    string
+	UserId      string
+	ExamId      string
+	ZipFilePath string
+}
+
 var (
-	ResultPaths = make(chan string, 200)
+	ResultPaths = make(chan ProofData, 200)
 )
 
 func (h *Handler) StudentsRegister(c *gin.Context) {
@@ -99,19 +107,36 @@ func (h *Handler) GetQuestions(c *gin.Context) {
 }
 
 func (h *Handler) UploadExamProof(c *gin.Context) {
-	file, err := c.FormFile("zipFile")
 
-	if err != nil {
+	bindFile := struct {
+		ExamId  string                `form:"examId" binding:"required"`
+		ZipFile *multipart.FileHeader `form:"zipFile" binding:"required"`
+	}{}
+
+	// file, err := c.FormFile("zipFile")
+
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	// Bind file
+	if err := c.ShouldBind(&bindFile); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	file := bindFile.ZipFile
 
 	if strings.Split(file.Filename, ".")[1] != "zip" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
 
-	dstPath := filepath.Join("../media/examProofs", file.Filename)
+	clientId := c.GetString("clientId")
+	userId := c.GetString("userId")
+
+	dstPath := filepath.Join("../media/examProofs", clientId, bindFile.ExamId, userId, file.Filename)
 
 	// Upload the file to specific dst.
 	// if err = c.SaveUploadedFile(file, dstPath); err != nil {
@@ -144,7 +169,12 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 
 	defer dstFile.Close()
 
-	ResultPaths <- dstPath
+	ResultPaths <- ProofData{
+		ClientId:    clientId,
+		UserId:      userId,
+		ExamId:      bindFile.ExamId,
+		ZipFilePath: dstPath,
+	}
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
 }

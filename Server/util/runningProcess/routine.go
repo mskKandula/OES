@@ -5,6 +5,10 @@ import (
 	"io"
 	"log"
 	"os"
+	"path/filepath"
+
+	"github.com/mskKandula/oes/api/handler"
+	"github.com/mskKandula/oes/ds"
 )
 
 // func HlsVideoConversion(resultChan <-chan string) {
@@ -53,21 +57,23 @@ import (
 
 // }
 
-func UnzipFile(resultPaths <-chan string) {
-
-	dir := "../media/examProofs/"
+func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 
 	for result := range resultPaths {
-		reader, err := zip.OpenReader(result)
+		dir := filepath.Join("../media/examProofs", result.ClientId, result.ExamId, result.UserId)
+
+		reader, err := zip.OpenReader(result.ZipFilePath)
 
 		if err != nil {
 			log.Println(err)
 			continue
 		}
 
+		var AllFilesPaths []string
+
 		for _, file := range reader.File {
 
-			fpath := dir + file.Name
+			fpath := filepath.Join(dir, file.Name)
 
 			// Make Folder
 			// if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
@@ -99,12 +105,44 @@ func UnzipFile(resultPaths <-chan string) {
 			// Close the file without defer to close before next iteration of loop
 			outFile.Close()
 			inFile.Close()
+
+			AllFilesPaths = append(AllFilesPaths, fpath)
 		}
+
 		reader.Close()
+
+		if err := ExamProofsInsertion(db, AllFilesPaths); err != nil {
+			log.Println(err)
+		}
 
 		err = os.Remove(result)
 		if err != nil {
 			log.Println(err)
 		}
 	}
+}
+
+func ExamProofsInsertion(db *ds.DataSources, filePaths []string) error {
+	sqlStr := "INSERT INTO ExamProofs(imagePath) VALUES "
+
+	// For Insert Many
+	for range filePaths {
+		sqlStr += "(?),"
+	}
+
+	//trim the last
+	sqlStr = sqlStr[0 : len(sqlStr)-1]
+
+	//prepare the statement
+	query, err := db.MySQLDB.Prepare(sqlStr)
+	if err != nil {
+		return err
+	}
+
+	result, err := query.Exec(filePaths...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
