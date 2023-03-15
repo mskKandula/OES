@@ -104,7 +104,7 @@ func (h *Handler) DownloadStudents(c *gin.Context) {
 }
 
 func (h *Handler) GetQuestions(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines})
+	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines, "examId": examId})
 }
 
 func (h *Handler) UploadExamProof(c *gin.Context) {

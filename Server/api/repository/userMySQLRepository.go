@@ -99,18 +99,18 @@ func (ur *userMySQLRepository) CreateVideo(ctx context.Context, fileName, videoU
 	return err
 }
 
-func (ur *userMySQLRepository) ExamCreation(ctx context.Context, clientId string) error {
+func (ur *userMySQLRepository) ExamCreation(ctx context.Context, clientId string) (int64, error) {
 
 	// Insert into DB
 	query, err := ur.MySQLDB.Prepare("INSERT INTO Exam(clientId) VALUES(?)")
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	_, err = query.ExecContext(ctx, clientId)
+	result, err := query.ExecContext(ctx, clientId)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	return nil
+	return result.LastInsertId()
 }

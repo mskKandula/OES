@@ -103,10 +103,11 @@ export default {
       videoTrack: null,
       blobsArray: [],
       new_zip: null,
+      examId: 0,
     };
   },
   methods: {
-    next: function () {
+    next: function() {
       this.questionIndex++;
       if (this.input.length > 0) {
         this.answer.push(this.input);
@@ -117,7 +118,7 @@ export default {
       }
     },
     // Go to previous question
-    prev: function () {
+    prev: function() {
       this.questionIndex--;
     },
     submitAnswer() {
@@ -172,12 +173,13 @@ export default {
       let self = this;
       this.$http
         .get("/api/r/getQuestions")
-        .then(function (res) {
+        .then(function(res) {
           if (res.data) {
             self.questions = res.data.questions;
+            self.examId = res.data.examId;
           }
         })
-        .catch(function () {
+        .catch(function() {
           console.log("FAILURE!!");
         });
     },
@@ -253,7 +255,7 @@ export default {
         .generateAsync({
           type: "blob",
         })
-        .then(function (content) {
+        .then(function(content) {
           // To download a Zip File
           // var a = document.createElement("a");
           // let url = window.URL.createObjectURL(content);
@@ -267,6 +269,7 @@ export default {
 
           var formData = new FormData();
           formData.append("zipFile", files);
+          formData.append("examId", self.examId);
 
           self.$http
             .post("/api/r/uploadExamProof", formData, {
@@ -274,11 +277,11 @@ export default {
                 "Content-Type": "multipart/form-data",
               },
             })
-            .then(function (res) {
+            .then(function(res) {
               console.log(res);
               self.blobsArray = [];
             })
-            .catch(function (e) {
+            .catch(function(e) {
               console.log("Failed to upload", e);
             });
         });
@@ -292,5 +295,4 @@ export default {
 };
 </script>
 
-<style>
-</style>
+<style></style>

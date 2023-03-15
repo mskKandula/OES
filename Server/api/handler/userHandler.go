@@ -15,6 +15,7 @@ import (
 var (
 	fileTextLines []string
 	// BufChan       = make(chan string, 10)
+	examId string
 )
 
 func (h *Handler) SignUp(c *gin.Context) {
@@ -160,12 +161,13 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 	clientId := c.GetString("clientId")
 	ctx := c.Request.Context()
 
-	if err = h.UserService.CreateExam(ctx, clientId); err != nil {
+	examId, err = h.UserService.CreateExam(ctx, clientId)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to insert exam data"})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines})
+	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines, "examId": examId})
 }
 
 // file path creation
