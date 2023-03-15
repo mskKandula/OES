@@ -5,6 +5,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -109,7 +110,7 @@ func (h *Handler) GetQuestions(c *gin.Context) {
 func (h *Handler) UploadExamProof(c *gin.Context) {
 
 	bindFile := struct {
-		ExamId  string                `form:"examId" binding:"required"`
+		ExamId  int                   `form:"examId" binding:"required"`
 		ZipFile *multipart.FileHeader `form:"zipFile" binding:"required"`
 	}{}
 
@@ -134,9 +135,12 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 	}
 
 	clientId := c.GetString("clientId")
-	userId := c.GetString("userId")
+	userId := c.GetInt("userId")
 
-	dstPath := filepath.Join("../media/examProofs", clientId, bindFile.ExamId, userId, file.Filename)
+	examStrId := strconv.Itoa(bindFile.ExamId)
+	userStrId := strconv.Itoa(userId)
+
+	dstPath := filepath.Join("../media/examProofs", clientId, examStrId, userStrId, file.Filename)
 
 	// Upload the file to specific dst.
 	// if err = c.SaveUploadedFile(file, dstPath); err != nil {
@@ -171,8 +175,8 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 
 	ResultPaths <- ProofData{
 		ClientId:    clientId,
-		UserId:      userId,
-		ExamId:      bindFile.ExamId,
+		UserId:      userStrId,
+		ExamId:      examStrId,
 		ZipFilePath: dstPath,
 	}
 

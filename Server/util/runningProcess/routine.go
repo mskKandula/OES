@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 
 	"github.com/mskKandula/oes/api/handler"
-	"github.com/mskKandula/oes/ds"
+	ds "github.com/mskKandula/oes/dataSources"
 )
 
 // func HlsVideoConversion(resultChan <-chan string) {
@@ -69,7 +69,7 @@ func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 			continue
 		}
 
-		var AllFilesPaths []string
+		var vals []interface{}
 
 		for _, file := range reader.File {
 
@@ -106,28 +106,28 @@ func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 			outFile.Close()
 			inFile.Close()
 
-			AllFilesPaths = append(AllFilesPaths, fpath)
+			vals = append(vals, result.UserId, result.ExamId, fpath)
 		}
 
 		reader.Close()
 
-		if err := ExamProofsInsertion(db, AllFilesPaths); err != nil {
+		if err := StudentExamProofsInsertion(db, vals); err != nil {
 			log.Println(err)
 		}
 
-		err = os.Remove(result)
+		err = os.Remove(result.ZipFilePath)
 		if err != nil {
 			log.Println(err)
 		}
 	}
 }
 
-func ExamProofsInsertion(db *ds.DataSources, filePaths []string) error {
-	sqlStr := "INSERT INTO ExamProofs(imagePath) VALUES "
+func StudentExamProofsInsertion(db *ds.DataSources, vals []interface{}) error {
+	sqlStr := "INSERT INTO StudentExamProofs(studentId,examId,proofPath) VALUES "
 
 	// For Insert Many
-	for range filePaths {
-		sqlStr += "(?),"
+	for range vals {
+		sqlStr += "(?,?,?),"
 	}
 
 	//trim the last
@@ -139,10 +139,9 @@ func ExamProofsInsertion(db *ds.DataSources, filePaths []string) error {
 		return err
 	}
 
-	result, err := query.Exec(filePaths...)
+	_, err = query.Exec(vals...)
 	if err != nil {
 		return err
 	}
-
 	return nil
 }

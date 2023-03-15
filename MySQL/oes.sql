@@ -116,12 +116,18 @@ CREATE TABLE `VideoContent`(
 create table `Exams`(
     id INT NOT NULL AUTO_INCREMENT,
     clientId VARCHAR(100) NOT NULL,
-    createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
 );
-create table `ExamProofs`(
+create table `StudentExamProofs`(
     id INT NOT NULL AUTO_INCREMENT,
-    imagePath VARCHAR(100) NOT NULL,
-    createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    studentId INT NOT NULL,
+    examId INT NOT NULL,
+    proofPath VARCHAR(100) NOT NULL,
+    createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(`studentId`) REFERENCES Students(`id`),
+    FOREIGN KEY(`examId`) REFERENCES Exams(`id`),
+    PRIMARY KEY (`id`)
 );
 -- mysql -u root -p
 -- root
