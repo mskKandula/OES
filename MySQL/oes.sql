@@ -129,5 +129,13 @@ create table `StudentExamProofs`(
     FOREIGN KEY(`examId`) REFERENCES Exams(`id`),
     PRIMARY KEY (`id`)
 );
+CREATE TABLE `StudentExamMarks`(
+    studentId INT NOT NULL,
+    examId INT NOT NULL,
+    marks INT,
+    FOREIGN KEY(`studentId`) REFERENCES Students(`id`),
+    FOREIGN KEY(`examId`) REFERENCES Exams(`id`),
+    PRIMARY KEY (`studentId`, `examId`)
+);
 -- mysql -u root -p
 -- root
