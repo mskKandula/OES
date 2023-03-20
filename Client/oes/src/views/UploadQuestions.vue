@@ -54,7 +54,9 @@ export default {
       /*
                 Add the form data we need to submit
             */
-      formData.append("myFile", file);
+      formData.append("questionFile", file);
+      formData.append("examName", "ComputerBasics");
+      formData.append("examType", "Descriptive");
       /*
           Make the request to the POST /single-file URL
         */
@@ -64,7 +66,7 @@ export default {
             "Content-Type": "multipart/form-data",
           },
         })
-        .then(function (res) {
+        .then(function(res) {
           self.$refs.myVueDropzone.removeFile(file);
           if (res.data) {
             self.notifyStudents();
@@ -86,7 +88,7 @@ export default {
             });
           }
         })
-        .catch(function () {
+        .catch(function() {
           self.$refs.myVueDropzone.removeFile(file);
           self.$bvToast.toast(`Please Upload Proper File`, {
             title: "Failed",

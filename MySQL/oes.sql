@@ -115,6 +115,8 @@ CREATE TABLE `VideoContent`(
 );
 create table `Exams`(
     id INT NOT NULL AUTO_INCREMENT,
+    name VARCHAR(50) NOT NULL,
+    type VARCHAR(45),
     clientId VARCHAR(100) NOT NULL,
     createdOn TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     PRIMARY KEY (`id`)
