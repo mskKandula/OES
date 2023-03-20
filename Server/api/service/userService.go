@@ -61,8 +61,8 @@ func (us *userService) GenQuestion(ctx context.Context, requestData string) (str
 
 }
 
-func (us *userService) CreateExam(ctx context.Context, clientId string) (int64, error) {
-	examId, err := us.UserRepository.ExamCreation(ctx, clientId)
+func (us *userService) CreateExam(ctx context.Context, clientId, examName, examType string) (int64, error) {
+	examId, err := us.UserRepository.ExamCreation(ctx, clientId, examName, examType)
 	if err != nil {
 		return 0, err
 	}

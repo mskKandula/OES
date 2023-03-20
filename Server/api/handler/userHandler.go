@@ -3,6 +3,7 @@ package handler
 import (
 	"bufio"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -15,7 +16,7 @@ import (
 var (
 	fileTextLines []string
 	// BufChan       = make(chan string, 10)
-	examId string
+	examId int64
 )
 
 func (h *Handler) SignUp(c *gin.Context) {
@@ -119,12 +120,27 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 }
 
 func (h *Handler) QuestionsUpload(c *gin.Context) {
-	file, err := c.FormFile("myFile")
 
-	if err != nil {
+	bindFile := struct {
+		ExamName     string                `form:"examName" binding:"required"`
+		ExamType     string                `form:"examType" binding:"required"`
+		QuestionFile *multipart.FileHeader `form:"questionFile" binding:"required"`
+	}{}
+
+	// file, err := c.FormFile("myFile")
+
+	// if err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	// Bind file
+	if err := c.ShouldBind(&bindFile); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+
+	file := bindFile.QuestionFile
 
 	if strings.Split(file.Filename, ".")[1] != "txt" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
@@ -161,7 +177,7 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 	clientId := c.GetString("clientId")
 	ctx := c.Request.Context()
 
-	examId, err = h.UserService.CreateExam(ctx, clientId)
+	examId, err = h.UserService.CreateExam(ctx, clientId, bindFile.ExamName, bindFile.ExamType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to insert exam data"})
 		return
