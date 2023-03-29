@@ -202,6 +202,13 @@ export default {
             await new Promise((r) => setTimeout(r, 5000));
           }
 
+          // Stop the stream
+          stream.getTracks().forEach(function(track) {
+            if (track.readyState == "live") {
+              track.stop();
+            }
+          });
+
           self.uploadZip();
         })
 
@@ -222,7 +229,9 @@ export default {
         // Grab blob from canvas
         canvas.toBlob((blob) => {
           // Do things with blob here
-          blob.name = `studentId-${new Date().getTime()}.png`;
+          blob.name = `${sessionStorage.getItem(
+            "userId"
+          )}_${new Date().getTime()}.png`;
 
           self.blobsArray.push(blob);
 
