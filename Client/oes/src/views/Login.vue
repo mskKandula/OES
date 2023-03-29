@@ -596,7 +596,7 @@ export default {
       let self = this;
       this.$http
         .post("/api/o/signUp", self.details)
-        .then(function (res) {
+        .then(function(res) {
           console.log(res);
           self.$bvToast.toast(`Registered successfully`, {
             title: "Success",
@@ -606,7 +606,7 @@ export default {
             class: "toast",
           });
         })
-        .catch(function () {
+        .catch(function() {
           console.log("FAILURE!!");
         });
     },
@@ -618,9 +618,11 @@ export default {
             "Content-Type": "text/plain",
           },
         })
-        .then(function (res) {
+        .then(function(res) {
           if (res.data) {
-            sessionStorage.setItem("clientId", res.data.clientId)
+            sessionStorage.setItem("clientId", res.data.clientId);
+            sessionStorage.setItem("userId", res.data.userId);
+            sessionStorage.setItem("userType", res.data.userType);
             if (res.data.userType === "Examiner") {
               self.$router.push({ path: "/dashboard" });
             } else {
@@ -628,7 +630,7 @@ export default {
             }
           }
         })
-        .catch(function () {
+        .catch(function() {
           self.$bvToast.toast(`Please Enter Valid Credentials`, {
             title: "Not Valid",
             variant: "danger",

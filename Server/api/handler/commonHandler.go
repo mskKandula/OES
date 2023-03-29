@@ -44,7 +44,7 @@ func (h *Handler) Login(c *gin.Context) {
 		Expires: expiriesIn,
 	})
 
-	c.JSON(http.StatusOK, gin.H{"userType": userType, "clientId": clientId})
+	c.JSON(http.StatusOK, gin.H{"userType": userType, "clientId": clientId, "userId": id})
 }
 
 func (h *Handler) GetAllRoutes(c *gin.Context) {
