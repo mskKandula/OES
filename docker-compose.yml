@@ -142,3 +142,5 @@ volumes:
   mysql_data:
   cache_data:
   file_data:
+
+# docker-compose up --build

@@ -63,7 +63,6 @@ func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 		dir := filepath.Join("../media/examProofs", result.ClientId, result.ExamId, result.UserId)
 
 		reader, err := zip.OpenReader(result.ZipFilePath)
-
 		if err != nil {
 			log.Println(err)
 			continue
@@ -111,8 +110,9 @@ func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 
 		reader.Close()
 
-		if err := StudentExamProofsInsertion(db, vals); err != nil {
+		if err = StudentExamProofsInsertion(db, vals); err != nil {
 			log.Println(err)
+			continue
 		}
 
 		err = os.Remove(result.ZipFilePath)
@@ -123,10 +123,12 @@ func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 }
 
 func StudentExamProofsInsertion(db *ds.DataSources, vals []interface{}) error {
+
 	sqlStr := "INSERT INTO StudentExamProofs(studentId,examId,proofPath) VALUES "
 
+	totalVals := (len(vals) / 3)
 	// For Insert Many
-	for range vals {
+	for i := 0; i < totalVals; i++ {
 		sqlStr += "(?,?,?),"
 	}
 
@@ -143,5 +145,6 @@ func StudentExamProofsInsertion(db *ds.DataSources, vals []interface{}) error {
 	if err != nil {
 		return err
 	}
+
 	return nil
 }

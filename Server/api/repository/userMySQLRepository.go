@@ -102,7 +102,7 @@ func (ur *userMySQLRepository) CreateVideo(ctx context.Context, fileName, videoU
 func (ur *userMySQLRepository) ExamCreation(ctx context.Context, clientId, examName, examType string) (int64, error) {
 
 	// Insert into DB
-	query, err := ur.MySQLDB.Prepare("INSERT INTO Exam(clientId,name,type) VALUES(?,?,?)")
+	query, err := ur.MySQLDB.Prepare("INSERT INTO Exams(clientId,name,type) VALUES(?,?,?)")
 	if err != nil {
 		return 0, err
 	}
