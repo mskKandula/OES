@@ -26,17 +26,17 @@ export default {
       let self = this;
       this.$http
         .get("/api/r/getVideos")
-        .then(function (res) {
+        .then(function(res) {
           if (res.data) {
             self.videosList = res.data.videos;
           }
         })
-        .catch(function () {
+        .catch(function() {
           console.log("FAILURE!!");
         });
     },
     playVideo(url) {
-      this.$router.push({ name: "VideoPlay", params: { videoUrl: url } });
+      this.$router.push({ name: "VideoPlayer", params: { videoUrl: url } });
     },
   },
   mounted() {

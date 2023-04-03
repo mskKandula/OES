@@ -119,6 +119,14 @@ const routes = [
         },
       },
       {
+        path: "/playerVideo",
+        name: "VideoPlayer",
+        component: loadView("VideoPlayer"),
+        meta: {
+          title: "VideoPlayer",
+        },
+      },
+      {
         path: "/videoCaption",
         name: "VideoCaptioning",
         component: loadView("VideoCaptioning"),
