@@ -143,35 +143,35 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 	dstPath := filepath.Join("../media/examProofs", clientId, examStrId, userStrId, file.Filename)
 
 	// Upload the file to specific dst.
-	// if err = c.SaveUploadedFile(file, dstPath); err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
+	if err := c.SaveUploadedFile(file, dstPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
+		return
+	}
+
+	// FilePath Creation
+	// dstFile, err := Create(dstPath)
+
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	// 	return
 	// }
 
-	// FilePath Creation
-	dstFile, err := Create(dstPath)
+	// fileData, err := file.Open()
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	// defer fileData.Close()
 
-	fileData, err := file.Open()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+	// _, err = io.Copy(dstFile, fileData)
 
-	defer fileData.Close()
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
 
-	_, err = io.Copy(dstFile, fileData)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	defer dstFile.Close()
+	// defer dstFile.Close()
 
 	ResultPaths <- ProofData{
 		ClientId:    clientId,

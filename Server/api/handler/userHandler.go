@@ -2,10 +2,8 @@ package handler
 
 import (
 	"bufio"
-	"io"
 	"mime/multipart"
 	"net/http"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -72,35 +70,35 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 	imagePath := filepath.Join("/media/video", clientId, paths[0], imageName)
 
 	// FilePath Creation
-	dstFile, err := Create(dstPath)
+	// dstFile, err := Create(dstPath)
 
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	fileData, err := file.Open()
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	defer fileData.Close()
-
-	_, err = io.Copy(dstFile, fileData)
-
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	defer dstFile.Close()
-
-	// Upload the file to specific dst.
-	// if err = c.SaveUploadedFile(file, dstPath); err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 	// 	return
 	// }
+
+	// fileData, err := file.Open()
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	// defer fileData.Close()
+
+	// _, err = io.Copy(dstFile, fileData)
+
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+
+	// defer dstFile.Close()
+
+	// Upload the file to specific dst.
+	if err = c.SaveUploadedFile(file, dstPath); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
+		return
+	}
 
 	ctx := c.Request.Context()
 
@@ -187,12 +185,12 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 }
 
 // file path creation
-func Create(path string) (*os.File, error) {
-	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
-		return nil, err
-	}
-	return os.Create(path)
-}
+// func Create(path string) (*os.File, error) {
+// 	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
+// 		return nil, err
+// 	}
+// 	return os.Create(path)
+// }
 
 func (h *Handler) QuestionGen(c *gin.Context) {
 	questionRequest := model.QuestionRequest{}
