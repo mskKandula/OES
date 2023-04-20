@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 
+	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	ds "github.com/mskKandula/oes/dataSources"
 )
@@ -109,7 +110,7 @@ func (pool *Pool) listenPubSubChannel(ds *ds.DataSources) {
 
 			if client.Details.Role == "Student" {
 
-				if err := wsutil.WriteClientBinary(client.Conn, []byte(data.Payload)); err != nil {
+				if err := wsutil.WriteServerMessage(client.Conn, ws.OpText, []byte(data.Payload)); err != nil {
 
 					log.Println(err)
 					return
