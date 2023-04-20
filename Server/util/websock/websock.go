@@ -2,19 +2,14 @@ package websock
 
 import (
 	"log"
+	"net"
 	"net/http"
 
-	"github.com/gorilla/websocket"
+	"github.com/gobwas/ws"
 )
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true },
-}
-
-func Upgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
-	conn, err := upgrader.Upgrade(w, r, nil)
+func Upgrade(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
+	conn, _, _, err := ws.UpgradeHTTP(r, w)
 	if err != nil {
 		log.Println(err)
 		return nil, err
