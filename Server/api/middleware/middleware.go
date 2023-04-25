@@ -11,13 +11,14 @@ import (
 	"github.com/mskKandula/oes/api/model"
 )
 
-func GenerateJWT(creds model.UserLogin, id int, userType, clientId string) (string, time.Time, error) {
+func GenerateJWT(creds model.UserLogin, id int, userType, clientId string) (string, string, time.Time, error) {
 
 	var err error
 
 	//Creating Access Token
 	os.Setenv("jwtKey", "7yt65U745TR57lo9h%$fre#$TR43EW") //this should be in an env file
 
+	// Access Token
 	atClaims := jwt.MapClaims{}
 
 	atClaims["authorized"] = true
@@ -32,16 +33,28 @@ func GenerateJWT(creds model.UserLogin, id int, userType, clientId string) (stri
 
 	atClaims["expireAt"] = expirationTime
 
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
+	atoken := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 
-	tokenString, err := token.SignedString([]byte(os.Getenv("jwtKey")))
+	atokenString, err := atoken.SignedString([]byte(os.Getenv("jwtKey")))
+
+	// Refresh Token
+	rtClaims := jwt.MapClaims{}
+
+	rtClaims["id"] = id
+
+	rtClaims["userType"] = userType
+
+	rtClaims["expireAt"] = time.Now().Add(time.Hour * 24)
+
+	rtoken := jwt.NewWithClaims(jwt.SigningMethodHS256, rtClaims)
+
+	rtokenString, err := rtoken.SignedString([]byte(os.Getenv("jwtKey")))
 
 	if err != nil {
-		return "", expirationTime, err
+		return "", "", expirationTime, err
 	}
 
-	return tokenString, expirationTime, nil
-
+	return atokenString, rtokenString, expirationTime, nil
 }
 
 func ValidateToken(tokenString, role string) (interface{}, interface{}, interface{}, error) {

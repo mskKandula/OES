@@ -30,7 +30,7 @@ func (h *Handler) Login(c *gin.Context) {
 		return
 	}
 
-	tokenString, expiriesIn, err := middleware.GenerateJWT(userLogin, id, userType, clientId)
+	atokenString, rtokenString, expiriesIn, err := middleware.GenerateJWT(userLogin, id, userType, clientId)
 
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -39,7 +39,7 @@ func (h *Handler) Login(c *gin.Context) {
 
 	http.SetCookie(c.Writer, &http.Cookie{
 		Name:    "token",
-		Value:   tokenString,
+		Value:   atokenString,
 		Path:    "/",
 		Expires: expiriesIn,
 	})
