@@ -36,6 +36,9 @@ func GenerateJWT(creds model.UserLogin, id int, userType, clientId string) (stri
 	atoken := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 
 	atokenString, err := atoken.SignedString([]byte(os.Getenv("jwtKey")))
+	if err != nil {
+		return "", "", expirationTime, err
+	}
 
 	// Refresh Token
 	rtClaims := jwt.MapClaims{}
@@ -92,7 +95,7 @@ func ValidateToken(tokenString, role string) (interface{}, interface{}, interfac
 
 func Auth(role string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		cookie, err := c.Request.Cookie("token")
+		cookie, err := c.Request.Cookie("atoken")
 
 		if err != nil {
 			if err == http.ErrNoCookie {

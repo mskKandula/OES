@@ -38,10 +38,17 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	http.SetCookie(c.Writer, &http.Cookie{
-		Name:    "token",
+		Name:    "atoken",
 		Value:   atokenString,
 		Path:    "/",
 		Expires: expiriesIn,
+	})
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:    "rtoken",
+		Value:   rtokenString,
+		Path:    "/",
+		Expires: time.Now().Add(time.Hour * 24),
 	})
 
 	c.JSON(http.StatusOK, gin.H{"userType": userType, "clientId": clientId, "userId": id})
@@ -104,7 +111,13 @@ func (h *Handler) ServeWs(pool *websock.Pool, w http.ResponseWriter, r *http.Req
 func (h *Handler) Logout(c *gin.Context) {
 
 	http.SetCookie(c.Writer, &http.Cookie{
-		Name:   "token",
+		Name:   "atoken",
+		MaxAge: -1,
+		Path:   "/",
+	})
+
+	http.SetCookie(c.Writer, &http.Cookie{
+		Name:   "rtoken",
 		MaxAge: -1,
 		Path:   "/",
 	})
