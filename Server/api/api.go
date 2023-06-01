@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 
+	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
 	"github.com/mskKandula/oes/api/config"
 	"github.com/mskKandula/oes/api/handler"
@@ -55,6 +56,7 @@ func InitRouter() *gin.Engine {
 	// r.Use(static.Serve("/", static.LocalFile("../Client/oes/dist", false)))
 
 	// r.Use(cor.Default())
+	r.Use(limit.MaxAllowed(20))
 
 	r.GET("/ws", func(c *gin.Context) {
 		h.ServeWs(pool, c.Writer, c.Request)
