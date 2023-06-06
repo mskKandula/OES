@@ -66,7 +66,7 @@ func InitRouter() *gin.Engine {
 	{
 		open.POST("/signUp", h.SignUp)
 		open.POST("/login", h.Login)
-		open.POST("/status", h.CheckStatus)
+		open.GET("/status", h.CheckStatus)
 	}
 
 	common := r.Group("/r").Use(middleware.Auth("Common"))
