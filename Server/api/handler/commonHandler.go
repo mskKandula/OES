@@ -96,8 +96,6 @@ func (h *Handler) ServeWs(pool *websock.Pool, w http.ResponseWriter, r *http.Req
 		Details: &details,
 	}
 
-	go client.Read()
-
 	pool.Register <- client
 }
 

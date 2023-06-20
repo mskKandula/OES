@@ -8,6 +8,7 @@ import (
 
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
+	"github.com/mailru/easygo/netpoll"
 	ds "github.com/mskKandula/oes/dataSources"
 )
 
@@ -42,6 +43,10 @@ func NewPool() *Pool {
 func (pool *Pool) Start(ds *ds.DataSources) {
 
 	go pool.listenPubSubChannel(ds)
+	poller, err := netpoll.New(nil)
+	if err != nil {
+		log.Println(err)
+	}
 
 	for {
 		select {
@@ -51,6 +56,20 @@ func (pool *Pool) Start(ds *ds.DataSources) {
 			pool.Clients[client.Id] = append(pool.Clients[client.Id], client)
 
 			fmt.Println("Size of Connection Pool: ", len(pool.Clients[client.Id]))
+
+			// Get netpoll descriptor with EventRead|EventEdgeTriggered.
+			desc := netpoll.Must(netpoll.HandleRead(client.Conn))
+
+			// Make conn to be observed by netpoll instance.
+			poller.Start(desc, func(ev netpoll.Event) {
+				if ev&netpoll.EventReadHup != 0 {
+					poller.Stop(desc)
+					client.Conn.Close()
+					return
+				}
+				go client.Read()
+			})
+
 			// for _, client := range pool.Clients[client.Id] {
 
 			// 	client.Conn.WriteJSON(Message{Type: 1, Body: "New User Joined..."})

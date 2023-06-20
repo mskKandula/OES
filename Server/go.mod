@@ -10,7 +10,7 @@ require (
 	github.com/gobwas/ws v1.2.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/schema v1.2.0
-	github.com/gorilla/websocket v1.5.0
+	github.com/mailru/easygo v0.0.0-20190618140210-3c14a0dc985f
 	github.com/rabbitmq/amqp091-go v1.8.0
 	github.com/tealeg/xlsx/v3 v3.2.4
 	github.com/tidwall/gjson v1.14.4
