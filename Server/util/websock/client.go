@@ -46,47 +46,43 @@ type Message struct {
 }
 
 func (c *Client) Read() {
-	defer func() {
-		c.Pool.Unregister <- c
-		c.Conn.Close()
-	}()
+	// defer func() {
+	// 	c.Pool.Unregister <- c
+	// 	c.Conn.Close()
+	// }()
 
 	// c.Conn.SetReadLimit(maxMessageSize)
 	// c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	// c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
-	// Start endless read loop, waiting for messages from client
-	for {
-		m := Message{}
+	m := Message{}
 
-		// err := c.Conn.ReadJSON(&m)
-		// if err != nil {
-		// 	if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-		// 		log.Printf("unexpected close error: %v", err)
-		// 	}
-		// 	log.Println(err)
-		// 	break
-		// }
+	// err := c.Conn.ReadJSON(&m)
+	// if err != nil {
+	// 	if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+	// 		log.Printf("unexpected close error: %v", err)
+	// 	}
+	// 	log.Println(err)
+	// 	break
+	// }
 
-		byteData, _, err := wsutil.ReadClientData(c.Conn)
-		if err != nil {
-			log.Println(err)
-			break
-		}
-
-		if err = json.Unmarshal(byteData, &m); err != nil {
-			log.Println(err)
-			break
-		}
-
-		if m.Type == 2 {
-			chart(c)
-		} else {
-			c.Pool.Broadcast <- m
-		}
-
-		// fmt.Printf("Message Received: %+v\n", m)
+	byteData, _, err := wsutil.ReadClientData(c.Conn)
+	if err != nil {
+		log.Println(err)
+		return
 	}
+
+	if err = json.Unmarshal(byteData, &m); err != nil {
+		log.Println(err)
+		return
+	}
+
+	if m.Type == 2 {
+		chart(c)
+	} else {
+		c.Pool.Broadcast <- m
+	}
+	// fmt.Printf("Message Received: %+v\n", m)
 }
 
 func chart(c *Client) {
@@ -113,5 +109,4 @@ func chart(c *Client) {
 
 		time.Sleep(3 * time.Second)
 	}
-	return
 }
