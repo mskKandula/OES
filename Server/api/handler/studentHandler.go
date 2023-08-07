@@ -93,10 +93,7 @@ func (h *Handler) DownloadStudents(c *gin.Context) {
 	}
 
 	ReportName := "All Students Details" + ".xlsx"
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
+
 	c.Writer.Header().Add("Content-type", "application/octet-stream")
 	c.Writer.Header().Set("Content-Disposition", "attachment; filename="+ReportName+".xlsx")
 	c.Writer.Header().Set("Content-Transfer-Encoding", "binary")
