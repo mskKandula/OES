@@ -169,3 +169,27 @@ create table messages(
     room
 
 ) 
+
+create table questions(
+    id
+    questionText
+    questionType
+    clientId
+    createdOn
+    createdBy
+)
+
+create table ExamQuestions(
+    examId
+    questionId
+)
+
+
+create table VideoQuestions(
+    examId
+    videoId
+    questionId
+    atTime
+
+
+)
