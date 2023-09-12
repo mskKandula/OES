@@ -54,7 +54,7 @@ func (sr *studentMySQLRepository) Create(ctx context.Context, student *model.Stu
 
 func (sr *studentMySQLRepository) ReadAll(ctx context.Context, clientId string) ([]model.Student, error) {
 	var students []model.Student
-	rows, err := sr.MySQLDB.QueryContext(ctx, `SELECT name,email,mobileNo from Students where clientId=?`, clientId)
+	rows, err := sr.MySQLDB.QueryContext(ctx, `SELECT id,name,email,mobileNo from Students where clientId=?`, clientId)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +64,7 @@ func (sr *studentMySQLRepository) ReadAll(ctx context.Context, clientId string) 
 	for rows.Next() {
 		var student model.Student
 
-		if err := rows.Scan(&student.Name, &student.Email, &student.Mobile); err != nil {
+		if err := rows.Scan(&student.Id, &student.Name, &student.Email, &student.Mobile); err != nil {
 			return nil, err
 		}
 		students = append(students, student)
