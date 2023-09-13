@@ -21,8 +21,10 @@ export default {
         this.$store.commit("setNotification", dataBody);
       } else if (parsedData.type == 2) {
         this.$store.commit("setChat", dataBody);
-      } else {
+      } else if (parsedData.type == 3) {
         this.$store.commit("setWhiteBoard", dataBody);
+      } else {
+        this.$store.commit("setBroadcast", dataBody);
       }
       this.$store.commit("setNotificationCount", 1);
     },
@@ -35,6 +37,7 @@ export default {
       const url = new URL("ws://localhost:9000/ws");
       url.searchParams.append("role", "Student");
       url.searchParams.append("id", sessionStorage.getItem("clientId"));
+      url.searchParams.append("userId", sessionStorage.getItem("userId"));
 
       this.ws = new WebSocket(url.href);
 
