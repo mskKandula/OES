@@ -12,6 +12,26 @@ export default {
       ws: null,
     };
   },
+  methods: {
+    mutateData(data) {
+      let parsedData = JSON.parse(data);
+      let dataBody = parsedData.body;
+
+      if (parsedData.type == 1) {
+        this.$store.commit("setNotification", dataBody);
+      } else if (parsedData.type == 2) {
+        this.$store.commit("setChat", dataBody);
+      } else if (parsedData.type == 3) {
+        this.$store.commit("setWhiteBoard", dataBody);
+      } else if (parsedData.type == 4) {
+        this.$store.commit("setBroadcast", dataBody);
+      } else if (parsedData.type == 5) {
+        this.$store.commit("setOnlineUsers", dataBody);
+      } else {
+        this.$store.commit("setNotificationCount", 1);
+      }
+    },
+  },
   created() {
     const onlyOnce = this.$store.getters.getOnce;
     if (onlyOnce) {
@@ -20,6 +40,7 @@ export default {
       const url = new URL("ws://localhost:9000/ws");
       url.searchParams.append("role", "User");
       url.searchParams.append("id", sessionStorage.getItem("clientId"));
+      url.searchParams.append("userId", sessionStorage.getItem("userId"));
 
       this.ws = new WebSocket(url.href);
 
@@ -40,7 +61,7 @@ export default {
 
         data = data.split(/\r?\n/);
 
-        alert(JSON.parse(data[0]).body);
+        this.mutateData(data[0]);
 
         data = "";
       };
