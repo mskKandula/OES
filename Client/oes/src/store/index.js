@@ -5,7 +5,6 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    onceFlag: true,
     wsConn: "",
     notificationData: "",
     chatData: "",
@@ -17,9 +16,6 @@ export default new Vuex.Store({
   mutations: {
     setConn(state, data) {
       state.wsConn = data
-    },
-    setOnlyOnce(state, data) {
-      state.onceFlag = data
     },
     setNotification(state, data) {
       state.notificationData = data.body
@@ -38,7 +34,14 @@ export default new Vuex.Store({
       }
     },
     setOnlineUsers(state, data) {
-      state.onlineUsers.push(data.user)
+      if (data.add) {
+        state.onlineUsers.push(data.user)
+      } else {
+        const index = state.onlineUsers.indexOf(data.user)
+        if (index > -1) {
+          state.onlineUsers.splice(index, 1)
+        }
+      }
     },
     setBroadcast(state, data) {
       state.broadcastData = data
@@ -48,7 +51,6 @@ export default new Vuex.Store({
   },
   getters: {
     getConn: (state) => state.wsConn,
-    getOnce: (state) => state.onceFlag,
     getNotification: (state) => state.notificationData,
     getChat: (state) => state.chatData,
     getWhiteBoard: (state) => state.whiteBoardData,

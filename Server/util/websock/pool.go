@@ -44,25 +44,38 @@ func (pool *Pool) Start(ds *ds.DataSources) {
 	for {
 		select {
 
-		case client := <-pool.Register:
+		case newClient := <-pool.Register:
 
-			pool.Clients[client.Id] = append(pool.Clients[client.Id], client)
+			pool.Clients[newClient.Id] = append(pool.Clients[newClient.Id], newClient)
 
-			fmt.Println("Size of Connection Pool: ", len(pool.Clients[client.Id]))
-			// for _, client := range pool.Clients[client.Id] {
+			fmt.Println("Size of Connection Pool: ", len(pool.Clients[newClient.Id]))
 
-			// 	client.Conn.WriteJSON(Message{Type: 1, Body: "New User Joined..."})
-			// }
+			for _, client := range pool.Clients[newClient.Id] {
 
-		case client := <-pool.Unregister:
+				if client.Role != newClient.Role || client.UserId != newClient.UserId {
+					client.Conn.WriteJSON(Message{Type: 5, Body: map[string]interface{}{"user": newClient.UserId, "add": true}, Id: newClient.Id})
+				}
 
-			delete(pool.Clients, client.Id)
+			}
 
-			fmt.Println("Size of Connection Pool : ", len(pool.Clients[client.Id]))
+		case newClient := <-pool.Unregister:
 
-			// for  _,client := range pool.Clients[client.Id] {
-			//     client.Conn.WriteJSON(Message{Type: 1, Body: "User Disconnected..."})
-			// }
+			var toDelete int
+
+			for i, client := range pool.Clients[newClient.Id] {
+
+				if client.UserId == newClient.UserId {
+					toDelete = i
+				}
+
+				if client.Role != newClient.Role || client.UserId != newClient.UserId {
+					client.Conn.WriteJSON(Message{Type: 5, Body: map[string]interface{}{"user": newClient.UserId, "add": false}, Id: newClient.Id})
+				}
+
+			}
+			pool.Clients[newClient.Id] = append(pool.Clients[newClient.Id][:toDelete], pool.Clients[newClient.Id][toDelete+1:]...)
+
+			fmt.Println("Size of Connection Pool: ", len(pool.Clients[newClient.Id]))
 
 		case message := <-pool.Broadcast:
 			// Publish the message on "general" channel
@@ -91,13 +104,11 @@ func (pool *Pool) listenPubSubChannel(ds *ds.DataSources) {
 
 	pubsub := ds.Redis.Subscribe(ctx, PubSubGeneralChannel)
 
-	msg := Message{}
-
 	ch := pubsub.Channel()
 
 	for data := range ch {
 
-		fmt.Println("Sending message to all clients in Pool")
+		msg := Message{}
 
 		if err := json.Unmarshal([]byte(data.Payload), &msg); err != nil {
 			log.Println(err)
@@ -105,9 +116,16 @@ func (pool *Pool) listenPubSubChannel(ds *ds.DataSources) {
 		}
 
 		for _, client := range pool.Clients[msg.Id] {
+			if msg.Type == 1 && client.Details.Role == "Student" {
+				fmt.Println("Sending message to all students in Pool")
+				if err := client.Conn.WriteJSON(msg); err != nil {
 
-			if client.Details.Role == "Student" {
+					log.Println(err)
+					return
+				}
 
+			} else if msg.Type == 4 && client.UserId == msg.To {
+				fmt.Println("Sending message to specific client in Pool")
 				if err := client.Conn.WriteJSON(msg); err != nil {
 
 					log.Println(err)
