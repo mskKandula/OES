@@ -16,23 +16,25 @@ import (
 
 const PubSubGeneralChannel = "general"
 
-var ctx = context.Background()
+var (
+	ctx            = context.Background()
+	poolInit       *Pool
+	ClientConnChan = make(chan *Client, 200)
+)
 
 type Pool struct {
 	Register   chan *Client
 	Unregister chan *Client
 	Clients    map[string][]*Client
-	Broadcast  chan Message
+	Broadcast  chan []byte
 }
-
-var poolInit *Pool
 
 func init() {
 	poolInit = &Pool{
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
 		Clients:    make(map[string][]*Client),
-		Broadcast:  make(chan Message),
+		Broadcast:  make(chan []byte),
 	}
 }
 
@@ -67,7 +69,7 @@ func (pool *Pool) Start(ds *ds.DataSources) {
 					client.Conn.Close()
 					return
 				}
-				go client.Read()
+				ClientConnChan <- client
 			})
 
 			// for _, client := range pool.Clients[client.Id] {
@@ -93,13 +95,13 @@ func (pool *Pool) Start(ds *ds.DataSources) {
 }
 
 // Redis Publish message functionality
-func (pool *Pool) publishMessage(msg Message, ds *ds.DataSources) {
-	payload, err := json.Marshal(msg)
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	err = ds.Redis.Publish(ctx, PubSubGeneralChannel, payload).Err()
+func (pool *Pool) publishMessage(payload []byte, ds *ds.DataSources) {
+	// payload, err := json.Marshal(msg)
+	// if err != nil {
+	// 	log.Println(err)
+	// 	return
+	// }
+	err := ds.Redis.Publish(ctx, PubSubGeneralChannel, payload).Err()
 
 	if err != nil {
 		log.Println(err)
