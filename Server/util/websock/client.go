@@ -1,12 +1,10 @@
 package websock
 
 import (
-	"encoding/json"
 	"log"
-	"math/rand"
 	"net"
-	"time"
 
+	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 )
 
@@ -24,9 +22,9 @@ import (
 // maxMessageSize = 100000
 // )
 
-type IntegerArray struct {
-	Intarr []int `json : intarr`
-}
+// type IntegerArray struct {
+// 	Intarr []int `json : intarr`
+// }
 
 type Details struct {
 	Role string `json:"role"`
@@ -45,7 +43,7 @@ type Message struct {
 	Id   string `json:"id"`
 }
 
-func (c *Client) Read() {
+func Read(clients <-chan *Client) {
 	// defer func() {
 	// 	c.Pool.Unregister <- c
 	// 	c.Conn.Close()
@@ -55,7 +53,7 @@ func (c *Client) Read() {
 	// c.Conn.SetReadDeadline(time.Now().Add(pongWait))
 	// c.Conn.SetPongHandler(func(string) error { c.Conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
-	m := Message{}
+	// m := Message{}
 
 	// err := c.Conn.ReadJSON(&m)
 	// if err != nil {
@@ -66,47 +64,65 @@ func (c *Client) Read() {
 	// 	break
 	// }
 
-	byteData, _, err := wsutil.ReadClientData(c.Conn)
-	if err != nil {
-		log.Println(err)
-		return
-	}
+	for c := range clients {
 
-	if err = json.Unmarshal(byteData, &m); err != nil {
-		log.Println(err)
-		return
-	}
-
-	if m.Type == 2 {
-		chart(c)
-	} else {
-		c.Pool.Broadcast <- m
-	}
-	// fmt.Printf("Message Received: %+v\n", m)
-}
-
-func chart(c *Client) {
-
-	for i := 0; i < 5; i++ {
-
-		rand.Seed(time.Now().UnixNano())
-
-		i := &IntegerArray{
-
-			Intarr: rand.Perm(12),
-		}
-
-		byteData, err := json.Marshal(i)
+		msg, op, err := wsutil.ReadClientData(c.Conn)
 		if err != nil {
-			log.Println(err)
+			log.Println("unknown message", "error", err.Error())
 			return
 		}
 
-		if err := wsutil.WriteClientBinary(c.Conn, byteData); err != nil {
-			log.Println(err)
-			return
+		switch op {
+		case ws.OpPing:
+			if err := wsutil.WriteServerMessage(c.Conn, ws.OpPong, msg); err != nil {
+				log.Println("failed to write pong message ", "error", err.Error())
+				return
+			}
+		case ws.OpText:
+			log.Println("receving message from client", "message", msg)
+			c.Pool.Broadcast <- msg
+		case ws.OpClose:
+			log.Println("client has been disconnected")
+			c.Pool.Unregister <- c
+			c.Conn.Close()
 		}
 
-		time.Sleep(3 * time.Second)
+		// if err = json.Unmarshal(byteData, &m); err != nil {
+		// 	log.Println(err)
+		// 	return
+		// }
+
+		// if m.Type == 2 {
+		// 	chart(c)
+		// } else {
+		// 	c.Pool.Broadcast <- m
+		// }
+		// fmt.Printf("Message Received: %+v\n", m)
 	}
 }
+
+// func chart(c *Client) {
+
+// 	for i := 0; i < 5; i++ {
+
+// 		rand.Seed(time.Now().UnixNano())
+
+// 		i := &IntegerArray{
+
+// 			Intarr: rand.Perm(12),
+// 		}
+
+// 		byteData, err := json.Marshal(i)
+// 		if err != nil {
+// 			log.Println(err)
+// 			return
+// 		}
+
+// 		if err := wsutil.WriteClientBinary(c.Conn, byteData); err != nil {
+// 			log.Println(err)
+// 			return
+// 		}
+
+// 		time.Sleep(3 * time.Second)
+// 	}
+// }
