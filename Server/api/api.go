@@ -35,15 +35,15 @@ func initSources() (*websock.Pool, *handler.Handler) {
 	h := handler.NewHandler(getUserService(ds, client), getStudentService(ds), getCommonService(ds))
 
 	// go runningProcess.HlsVideoConversion(handler.BufChan)
+
+	pool := websock.NewPool()
+	go pool.Start(ds)
+
 	// Worker Pool
 	for i := 0; i < maxWorkers; i++ {
 		go runningProcess.UnzipFile(handler.ResultPaths, ds)
 		go websock.Read(websock.ClientConnChan)
 	}
-
-	pool := websock.NewPool()
-
-	go pool.Start(ds)
 
 	return pool, h
 }

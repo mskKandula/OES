@@ -19,7 +19,7 @@ const PubSubGeneralChannel = "general"
 var (
 	ctx            = context.Background()
 	poolInit       *Pool
-	ClientConnChan = make(chan *Client, 200)
+	ClientConnChan chan *Client
 )
 
 type Pool struct {
@@ -36,6 +36,7 @@ func init() {
 		Clients:    make(map[string][]*Client),
 		Broadcast:  make(chan []byte),
 	}
+	ClientConnChan = make(chan *Client, 200)
 }
 
 func NewPool() *Pool {
