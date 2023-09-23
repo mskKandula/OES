@@ -58,10 +58,6 @@ func InitRouter() *gin.Engine {
 	// r.Use(cor.Default())
 	r.Use(limit.MaxAllowed(20))
 
-	r.GET("/ws", func(c *gin.Context) {
-		h.ServeWs(pool, c.Writer, c.Request)
-	})
-
 	open := r.Group("/o")
 	{
 		open.POST("/signUp", h.SignUp)
@@ -71,6 +67,9 @@ func InitRouter() *gin.Engine {
 
 	common := r.Group("/r").Use(middleware.Auth("Common"))
 	{
+		common.GET("/ws", func(c *gin.Context) {
+			h.ServeWs(pool, c.Writer, c.Request)
+		})
 		common.GET("/getRoutes", h.GetAllRoutes)
 		common.GET("/getVideos", h.GetAllVideos)
 		common.GET("/logOut", h.Logout)
