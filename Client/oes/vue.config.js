@@ -19,6 +19,11 @@ module.exports = {
                 pathRewrite: {
                     '^/cdn': ''
                 }
+            },
+            '^/': {
+                target: 'http://localhost:9000/', // provide proxy  for your project
+                ws: true,
+                changeOrigin: true
             }
         }
     }

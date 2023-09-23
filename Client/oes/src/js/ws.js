@@ -2,7 +2,7 @@ import store from '@/store'
 
 export function connectWebsocket() {
 
-    const url = new URL("ws://localhost:9000/ws");
+    const url = new URL("ws://" + window.location.host + "/r/ws");
     url.searchParams.append("role", sessionStorage.getItem("userType"));
     url.searchParams.append("id", sessionStorage.getItem("clientId"));
     url.searchParams.append("userId", sessionStorage.getItem("userId"));
