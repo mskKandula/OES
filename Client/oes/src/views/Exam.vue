@@ -73,6 +73,7 @@
 import SimpleKeyboard from "./SimpleKeyboard";
 import "./App.css";
 import JSZip from "jszip";
+import { mapGetters } from "vuex";
 export default {
   components: {
     SimpleKeyboard,
@@ -104,6 +105,8 @@ export default {
       blobsArray: [],
       new_zip: null,
       examId: 0,
+      peerRef: null,
+      userStream: null,
     };
   },
   methods: {
@@ -183,6 +186,73 @@ export default {
           console.log("FAILURE!!");
         });
     },
+    async callUser() {
+      console.log("Calling Other User");
+      this.peerRef = await this.createPeer();
+
+      this.userStream.getTracks().forEach((track) => {
+        this.peerRef.addTrack(track, this.userStream);
+      });
+    },
+    createPeer() {
+      return new Promise((resolve) => {
+        console.log("Creating Peer Connection");
+        const peer = new RTCPeerConnection({
+          iceServers: [
+            {
+              urls: [
+                "stun:stun.l.google.com:19302",
+                "stun:stun2.l.google.com:19302",
+              ],
+            },
+          ],
+        });
+
+        peer.onnegotiationneeded = this.handleNegotiationNeeded;
+        peer.onicecandidate = this.handleIceCandidateEvent;
+
+        resolve(peer);
+      });
+    },
+    async handleNegotiationNeeded() {
+      console.log("Creating Offer");
+
+      try {
+        const myOffer = await this.peerRef.createOffer();
+
+        await this.peerRef.setLocalDescription(myOffer);
+
+        this.socketConn.send(
+          JSON.stringify({
+            type: 4,
+            body: {
+              offer: this.peerRef.localDescription,
+            },
+            id: sessionStorage.getItem("clientId"),
+            to: 1,
+          })
+        );
+      } catch (err) {
+        console.log("136", err);
+      }
+    },
+
+    handleIceCandidateEvent(e) {
+      console.log("Found Ice Candidate");
+      if (e.candidate) {
+        this.socketConn.send(
+          JSON.stringify({
+            type: 4,
+            body: {
+              iceCandidate: e.candidate,
+            },
+            id: sessionStorage.getItem("clientId"),
+            to: 1,
+          })
+        );
+      }
+    },
+
     async getStream() {
       const self = this;
       navigator.mediaDevices
@@ -192,6 +262,7 @@ export default {
         .then(async (stream) => {
           let vid = document.getElementById("video");
           vid.srcObject = stream;
+          this.userStream = stream;
 
           // Grab frame from stream
           self.videoTrack = stream.getVideoTracks()[0];
@@ -216,8 +287,8 @@ export default {
     },
     captureImage() {
       const self = this;
-      self.imageCapture = new ImageCapture(self.videoTrack);
-      self.imageCapture.grabFrame().then((bitmap) => {
+      let imageCapture = new ImageCapture(self.videoTrack);
+      imageCapture.grabFrame().then((bitmap) => {
         // Stop sharing
         // track.stop();
         let canvas = document.getElementById("canvas");
@@ -300,6 +371,34 @@ export default {
     this.new_zip = new JSZip();
     this.getStream();
     this.getQues();
+  },
+  watch: {
+    message: {
+      deep: true,
+      handler(newmessage) {
+        if (newmessage.join) {
+          this.callUser();
+        } else if (newmessage.answer) {
+          console.log("Receiving Answer");
+          this.peerRef.setRemoteDescription(
+            new RTCSessionDescription(newmessage.answer)
+          );
+        } else if (newmessage.iceCandidate) {
+          console.log("Receiving and Adding ICE Candidate");
+          try {
+            this.peerRef.addIceCandidate(newmessage.iceCandidate);
+          } catch (err) {
+            console.log("Error Receiving ICE Candidate", err);
+          }
+        }
+      },
+    },
+  },
+  computed: {
+    ...mapGetters({
+      socketConn: "getConn",
+      message: "getBroadcast",
+    }),
   },
 };
 </script>

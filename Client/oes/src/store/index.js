@@ -5,46 +5,58 @@ Vue.use(Vuex)
 
 export default new Vuex.Store({
   state: {
-    onceFlag: true,
     wsConn: "",
-    notificationData:"",
-    chatData:"",
-    whiteBoardData:"",
-    notificationCount:0
+    notificationData: "",
+    chatData: "",
+    whiteBoardData: "",
+    notificationCount: 0,
+    onlineUsers: [],
+    broadcastData: null
   },
   mutations: {
-    setConn (state, data) {
+    setConn(state, data) {
       state.wsConn = data
     },
-    setOnlyOnce(state, data){
-      state.onceFlag = data
+    setNotification(state, data) {
+      state.notificationData = data.body
     },
-    setNotification(state,data){
-      state.notificationData=data
+    setChat(state, data) {
+      state.chatData = data.user
     },
-    setChat(state,data){
-      state.chatData=data
+    setWhiteBoard(state, data) {
+      state.whiteBoardData = data
     },
-    setWhiteBoard(state,data){
-      state.whiteBoardData=data
-    },
-    setNotificationCount(state,data){
-      if (data ===0){
+    setNotificationCount(state, data) {
+      if (data === 0) {
         state.notificationCount = data
-      }else{
-      state.notificationCount += data
+      } else {
+        state.notificationCount += data
       }
+    },
+    setOnlineUsers(state, data) {
+      if (data.add) {
+        state.onlineUsers.push(data.user)
+      } else {
+        const index = state.onlineUsers.indexOf(data.user)
+        if (index > -1) {
+          state.onlineUsers.splice(index, 1)
+        }
+      }
+    },
+    setBroadcast(state, data) {
+      state.broadcastData = data
     }
   },
   actions: {
   },
   getters: {
     getConn: (state) => state.wsConn,
-    getOnce: (state) => state.onceFlag,
     getNotification: (state) => state.notificationData,
     getChat: (state) => state.chatData,
     getWhiteBoard: (state) => state.whiteBoardData,
     getNotificationCount: (state) => state.notificationCount,
+    getOnlineUsers: (state) => state.onlineUsers,
+    getBroadcast: (state) => state.broadcastData
   },
   modules: {
   }

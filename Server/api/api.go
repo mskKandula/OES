@@ -3,6 +3,7 @@ package api
 import (
 	"log"
 
+	limit "github.com/aviddiviner/gin-limit"
 	"github.com/gin-gonic/gin"
 	"github.com/mskKandula/oes/api/config"
 	"github.com/mskKandula/oes/api/handler"
@@ -56,20 +57,20 @@ func InitRouter() *gin.Engine {
 	// r.Use(static.Serve("/", static.LocalFile("../Client/oes/dist", false)))
 
 	// r.Use(cor.Default())
-
-	r.GET("/ws", func(c *gin.Context) {
-		h.ServeWs(pool, c.Writer, c.Request)
-	})
+	r.Use(limit.MaxAllowed(20))
 
 	open := r.Group("/o")
 	{
 		open.POST("/signUp", h.SignUp)
 		open.POST("/login", h.Login)
-		open.POST("/status", h.CheckStatus)
+		open.GET("/status", h.CheckStatus)
 	}
 
 	common := r.Group("/r").Use(middleware.Auth("Common"))
 	{
+		common.GET("/ws", func(c *gin.Context) {
+			h.ServeWs(pool, c.Writer, c.Request)
+		})
 		common.GET("/getRoutes", h.GetAllRoutes)
 		common.GET("/getVideos", h.GetAllVideos)
 		common.GET("/logOut", h.Logout)

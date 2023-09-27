@@ -204,10 +204,11 @@ export default {
     },
     logout() {
       let self = this;
-      this.$http
+      self.socketConn.close();
+      self.$http
         .get("/api/r/logOut")
         .then(function() {
-          sessionStorage.clear()
+          sessionStorage.clear();
           self.$router.push("/");
         })
         .catch(function() {
@@ -255,6 +256,7 @@ export default {
     },
     ...mapGetters({
       notificationCount: "getNotificationCount",
+      socketConn: "getConn",
     }),
   },
 };

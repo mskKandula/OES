@@ -560,6 +560,7 @@ import Vue from "vue";
 // import Response from "@/plugins/response.js";
 // import "swiper/dist/css/swiper.css";
 import { swiper, swiperSlide } from "vue-awesome-swiper";
+import { connectWebsocket } from "@/js/ws.js";
 export default {
   data() {
     return {
@@ -623,6 +624,7 @@ export default {
             sessionStorage.setItem("clientId", res.data.clientId);
             sessionStorage.setItem("userId", res.data.userId);
             sessionStorage.setItem("userType", res.data.userType);
+            connectWebsocket();
             if (res.data.userType === "Examiner") {
               self.$router.push({ path: "/dashboard" });
             } else {

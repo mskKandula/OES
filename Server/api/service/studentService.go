@@ -48,7 +48,7 @@ func (ss *studentService) CreateStudents(ctx context.Context, byteArray []byte, 
 		return nil, err
 	}
 
-	for _, val := range result {
+	for index, val := range result {
 
 		name := val.Get("Name").String()
 		email := val.Get("Email").String()
@@ -61,7 +61,9 @@ func (ss *studentService) CreateStudents(ctx context.Context, byteArray []byte, 
 		}
 		hashedPassword := string(hash)
 
-		student := model.Student{name, email, mobile, hashedPassword, clientId}
+		id := index + 1
+
+		student := model.Student{id, name, email, mobile, hashedPassword, clientId}
 
 		if err = ss.StudentRepository.Create(ctx, &student); err != nil {
 			return nil, err

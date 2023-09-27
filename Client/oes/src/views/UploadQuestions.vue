@@ -104,7 +104,7 @@ export default {
       this.socketConn.send(
         JSON.stringify({
           type: 1,
-          body: "Exam has started, Please check",
+          body: { data: "Exam has started, Please check" },
           id: sessionStorage.getItem("clientId"),
         })
       );

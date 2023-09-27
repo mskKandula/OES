@@ -27,8 +27,9 @@ import (
 // }
 
 type Details struct {
-	Role string `json:"role"`
-	Id   string `json:"id"`
+	Role   string `json:"role"`
+	Id     string `json:"id"`
+	UserId int    `json:"userId"`
 }
 
 type Client struct {
@@ -38,9 +39,10 @@ type Client struct {
 }
 
 type Message struct {
-	Type int    `json:"type"`
-	Body string `json:"body"`
-	Id   string `json:"id"`
+	Type int                    `json:"type"`
+	Body map[string]interface{} `json:"body"`
+	Id   string                 `json:"id"`
+	To   int                    `json:"to,omitempty"`
 }
 
 func Read(clients <-chan *Client) {
