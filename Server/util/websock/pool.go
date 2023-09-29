@@ -50,6 +50,10 @@ func (pool *Pool) Start(ds *ds.DataSources) {
 		log.Println(err)
 	}
 
+	defer func() {
+		close(ClientConnChan)
+	}()
+
 	for {
 		select {
 
