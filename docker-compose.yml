@@ -1,4 +1,4 @@
-version: '3.0'
+version: "3.0"
 
 services:
   db:
@@ -37,8 +37,8 @@ services:
       dockerfile: ./Server/Dockerfile
     expose: ["9000"]
     ports:
-     - "9000:9000"
-    # we are depending on the mysql(db) & redis (cache) 
+      - "9000:9000"
+    # we are depending on the mysql(db) & redis (cache)
     depends_on:
       - db
       - cache
@@ -61,7 +61,7 @@ services:
       dockerfile: ./FileServer/Dockerfile
     expose: ["8887"]
     ports:
-     - "8887:8887"
+      - "8887:8887"
     networks:
       - default
     # We mount the working dir into the container, handy for development
@@ -71,36 +71,38 @@ services:
     restart: always
 
   client:
-   container_name: "oes_client"
-   build:
-    context: .
-    dockerfile: ./Client/Dockerfile
-   networks:
-    - default
-   restart: always
-   ports:
-    - "8080:80"
-   depends_on:
-    - server
-    - fileserver
-   links:
-    - server
+    container_name: "oes_client"
+    build:
+      context: .
+      dockerfile: ./Client/Dockerfile
+    networks:
+      - default
+    restart: always
+    ports:
+      - "8080:80"
+    depends_on:
+      - server
+      - fileserver
+    links:
+      - server
+    sysctls:
+      net.ipv4.ip_local_port_range: 10000 65535
 
   mqserver:
-   container_name: "oes_mqserver"
-   build:
-    context: .
-    dockerfile: ./MQServer/Dockerfile
-   networks:
-    - default
-   volumes:
+    container_name: "oes_mqserver"
+    build:
+      context: .
+      dockerfile: ./MQServer/Dockerfile
+    networks:
+      - default
+    volumes:
       - ./media:/app/OES/media
-   restart: always
-   depends_on:
-    - messageq
+    restart: always
+    depends_on:
+      - messageq
 
   messageq:
-    image: 'rabbitmq:3-management-alpine'
+    image: "rabbitmq:3-management-alpine"
     ports:
       - "15672:15672"
       - "5672:5672"
@@ -118,7 +120,7 @@ services:
       context: .
       dockerfile: ./IntelligenceSupport/questgen/Dockerfile
     networks:
-     - default
+      - default
     restart: always
 
   liveserver:
@@ -129,18 +131,16 @@ services:
       context: .
       dockerfile: ./LiveStreamingServer/Dockerfile
     networks:
-     - default
+      - default
     volumes:
       - ./media/video/liveData:/mnt/hls
     restart: always
 
-
 networks:
   default:
-   driver: bridge
+    driver: bridge
 volumes:
   mysql_data:
   cache_data:
   file_data:
-
 # docker-compose up --build
