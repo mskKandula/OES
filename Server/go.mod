@@ -4,6 +4,7 @@ go 1.18
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
+	github.com/gin-contrib/pprof v1.4.0
 	github.com/gin-gonic/gin v1.9.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-sql-driver/mysql v1.7.0
@@ -25,7 +26,6 @@ require (
 	github.com/bytedance/sonic v1.8.7 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20221115062448-fe3a3abad311 // indirect
-	github.com/aviddiviner/gin-limit v0.0.0-20170918012823-43b5f79762c1 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/frankban/quicktest v1.14.5 // indirect
 	github.com/gin-contrib/sse v0.1.0 // indirect

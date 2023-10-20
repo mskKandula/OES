@@ -3,7 +3,7 @@ package api
 import (
 	"log"
 
-	limit "github.com/aviddiviner/gin-limit"
+	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
 	"github.com/mskKandula/oes/api/config"
 	"github.com/mskKandula/oes/api/handler"
@@ -56,8 +56,10 @@ func InitRouter() *gin.Engine {
 	r := gin.Default()
 	// r.Use(static.Serve("/", static.LocalFile("../Client/oes/dist", false)))
 
+	pprof.Register(r)
+
 	// r.Use(cor.Default())
-	r.Use(limit.MaxAllowed(20))
+	// r.Use(limit.MaxAllowed(20))
 
 	open := r.Group("/o")
 	{
