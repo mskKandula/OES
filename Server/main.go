@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -40,16 +39,16 @@ func main() {
 	fmt.Println("Lets start OES")
 
 	// Increase resources limitations
-	var rLimit syscall.Rlimit
-	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		panic(err)
-	}
-	rLimit.Cur = rLimit.Max
-	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		panic(err)
-	}
+	// var rLimit syscall.Rlimit
+	// if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
+	// 	panic(err)
+	// }
+	// rLimit.Cur = rLimit.Max
+	// if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
+	// 	panic(err)
+	// }
 
-	if err = cnf.Setup("config.json"); err != nil {
+	if err = cnf.Setup("config_dev.json"); err != nil {
 		log.Fatalf("Setup Failed:%v", err.Error())
 	}
 
