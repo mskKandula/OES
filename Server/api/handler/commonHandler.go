@@ -92,6 +92,7 @@ func (h *Handler) ServeWs(pool *websock.Pool, w http.ResponseWriter, r *http.Req
 
 	client := &websock.Client{
 		Conn:    conn,
+		IsAlive: true,
 		Pool:    pool,
 		Details: &details,
 	}

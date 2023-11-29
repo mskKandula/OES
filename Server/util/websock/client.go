@@ -33,8 +33,9 @@ type Details struct {
 }
 
 type Client struct {
-	Conn net.Conn
-	Pool *Pool
+	Conn    net.Conn
+	IsAlive bool
+	Pool    *Pool
 	*Details
 }
 
@@ -75,12 +76,17 @@ func Read(clients <-chan *Client) {
 		}
 
 		switch op {
-		case ws.OpPing:
-			if err := wsutil.WriteServerMessage(c.Conn, ws.OpPong, msg); err != nil {
-				log.Println("failed to write pong message ", "error", err.Error())
-				return
-			}
+		// case ws.OpPing:
+		// 	if err := wsutil.WriteServerMessage(c.Conn, ws.OpPong, msg); err != nil {
+		// 		log.Println("failed to write pong message ", "error", err.Error())
+		// 		return
+		// 	}
+
+		case ws.OpBinary:
+			c.IsAlive = true
+
 		case ws.OpText:
+			c.IsAlive = true
 			log.Println("receving message from client", "message", msg)
 			c.Pool.Broadcast <- msg
 		case ws.OpClose:

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/gobwas/ws/wsutil"
 	"github.com/mailru/easygo/netpoll"
@@ -13,7 +14,10 @@ import (
 
 // var Conns = make(map[*websocket.Conn]bool)
 
-const PubSubGeneralChannel = "general"
+const (
+	PubSubGeneralChannel = "general"
+	HeartBeatInterval    = 10 * time.Second
+)
 
 var (
 	ctx            = context.Background()
@@ -43,6 +47,8 @@ func NewPool() *Pool {
 }
 
 func (pool *Pool) Start(ds *ds.DataSources) {
+
+	ticker := time.NewTicker(HeartBeatInterval)
 
 	go pool.listenPubSubChannel(ds)
 	poller, err := netpoll.New(nil)
@@ -130,6 +136,26 @@ func (pool *Pool) Start(ds *ds.DataSources) {
 		case message := <-pool.Broadcast:
 			// Publish the message on "general" channel
 			pool.publishMessage(message, ds)
+
+		case <-ticker.C:
+			for _, v := range pool.Clients {
+
+				for _, client := range v {
+
+					if !client.IsAlive {
+						client.Pool.Unregister <- client
+						client.Conn.Close()
+						continue
+					}
+
+					client.IsAlive = false
+
+					if err := wsutil.WriteServerBinary(client.Conn, []byte("1")); err != nil {
+						log.Println(err)
+						return
+					}
+				}
+			}
 		}
 	}
 }
