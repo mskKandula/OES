@@ -1,5 +1,5 @@
 # start with base image
-FROM mysql
+FROM mysql:8.0
 
 # import data into container
 
