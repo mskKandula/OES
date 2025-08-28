@@ -85,8 +85,10 @@ func (ur *userMySQLRepository) CreateVideo(ctx context.Context, fileName, videoU
 			false,         // mandatory
 			false,         // immediate
 			amqp.Publishing{
-				ContentType: "text/plain",
-				Body:        []byte(dstpath),
+				DeliveryMode: amqp.Persistent,
+				ContentType:  "text/plain",
+				Timestamp:    time.Now(),
+				Body:         []byte(dstpath),
 			})
 
 		if err != nil {
