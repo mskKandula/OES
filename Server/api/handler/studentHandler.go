@@ -125,8 +125,10 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 	}
 
 	file := bindFile.ZipFile
+	base := filepath.Base(file.Filename)
+	ext  := strings.ToLower(filepath.Ext(base))
 
-	if strings.Split(file.Filename, ".")[1] != "zip" {
+	if ext != ".zip" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
@@ -137,7 +139,7 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 	examStrId := strconv.Itoa(bindFile.ExamId)
 	userStrId := strconv.Itoa(userId)
 
-	dstPath := filepath.Join("../media/examProofs", clientId, examStrId, userStrId, file.Filename)
+	dstPath := filepath.Join("../media/examProofs", clientId, examStrId, userStrId, base)
 
 	// Upload the file to specific dst.
 	if err := c.SaveUploadedFile(file, dstPath); err != nil {
