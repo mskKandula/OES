@@ -46,10 +46,14 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 	}
 	// defer file.Close()
 
-	paths := strings.Split(file.Filename, ".")
+	// paths := strings.Split(file.Filename, ".")
+
+	base := filepath.Base(file.Filename)
+	ext := strings.ToLower(filepath.Ext(base))
+	fileName := strings.TrimSuffix(base, ext)
 
 	// checking the File Type, if not mp4 return
-	if paths[1] != "mp4" {
+	if ext != ".mp4" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
@@ -60,14 +64,14 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 		return
 	}
 
-	imageName := paths[0] + ".png"
+	imageName := fileName + ".png"
 
 	clientId := c.GetString("clientId")
 
-	dstPath := filepath.Join("../media/video", clientId, paths[0], file.Filename)
+	dstPath := filepath.Join("../media/video", clientId, fileName, base)
 
-	m3u8Path := filepath.Join("/media/video", clientId, paths[0], "index.m3u8")
-	imagePath := filepath.Join("/media/video", clientId, paths[0], imageName)
+	m3u8Path := filepath.Join("/media/video", clientId, fileName, "index.m3u8")
+	imagePath := filepath.Join("/media/video", clientId, fileName, imageName)
 
 	// FilePath Creation
 	// dstFile, err := Create(dstPath)
@@ -102,7 +106,7 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 
 	ctx := c.Request.Context()
 
-	if err = h.UserService.CreateVideoFile(ctx, paths[0], m3u8Path, imagePath, clientId, dstPath); err != nil {
+	if err = h.UserService.CreateVideoFile(ctx, fileName, m3u8Path, imagePath, clientId, dstPath); err != nil {
 
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
 		return
@@ -139,8 +143,10 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 	}
 
 	file := bindFile.QuestionFile
+	base := filepath.Base(file.Filename)
+	ext := strings.ToLower(filepath.Ext(base))
 
-	if strings.Split(file.Filename, ".")[1] != "txt" {
+	if ext != ".txt" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
@@ -168,6 +174,8 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 
 	fileScanner.Split(bufio.ScanLines)
 
+	// reset previously stored questions to avoid memory growth across requests
+	fileTextLines = fileTextLines[:0]
 	for fileScanner.Scan() {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
