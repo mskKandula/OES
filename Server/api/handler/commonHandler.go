@@ -42,6 +42,9 @@ func (h *Handler) Login(c *gin.Context) {
 		Value:   tokenString,
 		Path:    "/",
 		Expires: expiriesIn,
+		HttpOnly: true,
+		Secure:  false, // set true when behind HTTPS/production
+		SameSite: http.SameSiteLaxMode,
 	})
 
 	c.JSON(http.StatusOK, gin.H{"userType": userType, "clientId": clientId, "userId": id})
