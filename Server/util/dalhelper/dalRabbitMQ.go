@@ -23,7 +23,7 @@ func GetRabbitMQConnection(rabbitMQDSN string) (*amqp.Channel, amqp.Queue, error
 
 	q, connError = ch.QueueDeclare(
 		"encode", // name
-		false,    // durable
+		true,    // durable
 		false,    // delete when unused
 		false,    // exclusive
 		false,    // no-wait
