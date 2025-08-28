@@ -28,9 +28,10 @@ func GenerateJWT(creds model.UserLogin, id int, userType, clientId string) (stri
 
 	atClaims["userType"] = userType
 
-	expirationTime := time.Now().Add(time.Minute * 15)
-
-	atClaims["expireAt"] = expirationTime
+	expirationTime := time.Now().Add(15 * time.Minute)
+	
+	// standard claim for expiration
+	atClaims["exp"] = expirationTime.Unix()
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
 
