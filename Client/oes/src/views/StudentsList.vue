@@ -16,7 +16,7 @@
         <td>{{ student.name }}</td>
         <td>{{ student.email }}</td>
         <td>{{ student.mobile }}</td>
-        <td>{{ findStudentId(student.id) }}</td>
+        <td>{{ onlineUserSet.has(student.Id) }}</td>
         <td>
           <b-button
             id="requestBtn"
@@ -118,9 +118,9 @@ export default {
           console.log("FAILURE!!");
         });
     },
-    findStudentId(id) {
-      return this.onlineUsers.includes(id);
-    },
+   // findStudentId(id) {
+   //   return this.onlineUsers.includes(id);
+   // },
     requestVideo(id) {
       this.studentId = id;
       this.socketConn.send(
@@ -162,6 +162,9 @@ export default {
       socketConn: "getConn",
       message: "getBroadcast",
     }),
+    onlineUserSet(){
+      return new Set(this.onlineUsers);
+    },
   },
 };
 </script>
