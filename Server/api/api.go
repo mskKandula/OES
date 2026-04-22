@@ -2,6 +2,7 @@ package api
 
 import (
 	"log"
+	"runtime"
 
 	"github.com/gin-contrib/pprof"
 	"github.com/gin-gonic/gin"
@@ -18,8 +19,9 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	maxWorkers int = 10
+var (
+	// Scale workers based on CPU cores for better performance
+	maxWorkers = runtime.NumCPU() * 2
 )
 
 func initSources() (*websock.Pool, *handler.Handler) {
@@ -53,13 +55,19 @@ func InitRouter() *gin.Engine {
 
 	pool, h := initSources()
 
-	r := gin.Default()
-	// r.Use(static.Serve("/", static.LocalFile("../Client/oes/dist", false)))
+	// Use gin.New() instead of gin.Default() for more control
+	r := gin.New()
 
+	// Add custom logger middleware with less verbose output
+	r.Use(gin.LoggerWithFormatter(func(param gin.LogFormatterParams) string {
+		return ""
+	}))
+
+	// Add recovery middleware
+	r.Use(gin.Recovery())
+
+	// Register pprof for profiling
 	pprof.Register(r)
-
-	// r.Use(cor.Default())
-	// r.Use(limit.MaxAllowed(20))
 
 	open := r.Group("/o")
 	{
@@ -103,7 +111,7 @@ func InitRouter() *gin.Engine {
 func getUserService(ds *ds.DataSources, client pb.QuestGenServiceClient) model.UserService {
 
 	userMySQLRepository := repository.NewUserMySQLRepository(&repository.RepositoryConfig{
-		MySQLDB: ds.MySQLDB, RabbitMQ: ds.RabbitMQ, Queue: ds.Queue})
+		MySQLDB: ds.MySQLDB, RabbitMQ: ds.RabbitMQ, Queue: ds.Queue, Redis: ds.Redis})
 
 	userService := service.NewUserService(&service.UserServiceConfig{
 		UserRepository: userMySQLRepository,
