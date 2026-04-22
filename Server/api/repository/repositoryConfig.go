@@ -1,6 +1,7 @@
 package repository
 
 import (
+	"context"
 	"database/sql"
 
 	redis "github.com/go-redis/redis/v8"
@@ -24,23 +25,21 @@ type RepositoryConfig struct {
 
 type TxFn func(*sql.Tx) error
 
-//Not an exported one.
-func withTransaction(db *sql.DB, fn TxFn) (err error) {
-	tx, err := db.Begin()
+// Not an exported one.
+// withTransactionContext wraps database operations in a transaction with context support for better control
+func withTransactionContext(ctx context.Context, db *sql.DB, fn TxFn) (err error) {
+	tx, err := db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
 	defer func() {
 		if p := recover(); p != nil {
-			// a panic occurred, rollback and repanic
 			tx.Rollback()
 			panic(p)
 		} else if err != nil {
-			// something went wrong, rollback
 			tx.Rollback()
 		} else {
-			// all good, commit
 			err = tx.Commit()
 		}
 	}()
