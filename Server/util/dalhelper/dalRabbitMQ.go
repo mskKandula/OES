@@ -5,9 +5,8 @@ import (
 )
 
 var (
-	ch        *amqp.Channel
-	connError error
-	q         amqp.Queue
+	ch *amqp.Channel
+	q  amqp.Queue
 )
 
 func GetRabbitMQConnection(rabbitMQDSN string) (*amqp.Channel, amqp.Queue, error) {
@@ -23,7 +22,7 @@ func GetRabbitMQConnection(rabbitMQDSN string) (*amqp.Channel, amqp.Queue, error
 
 	q, connError = ch.QueueDeclare(
 		"encode", // name
-		true,    // durable
+		false,    // durable
 		false,    // delete when unused
 		false,    // exclusive
 		false,    // no-wait
