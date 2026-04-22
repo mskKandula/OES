@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"runtime"
 	"strings"
 
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/mskKandula/oes/api/model"
 	"github.com/mskKandula/oes/util/emailConfig"
@@ -22,7 +24,6 @@ var (
 		"Mobile",
 		"Password",
 	}
-	students []model.Student
 )
 
 type studentService struct {
@@ -48,32 +49,45 @@ func (ss *studentService) CreateStudents(ctx context.Context, byteArray []byte, 
 		return nil, err
 	}
 
+	students := make([]model.Student, len(result))
+
+	g, ctx := errgroup.WithContext(ctx)
+	sem := make(chan struct{}, runtime.NumCPU()) // bounded concurrency
+
 	for index, val := range result {
 
-		name := val.Get("Name").String()
-		email := val.Get("Email").String()
-		mobile := val.Get("Mobile").String()
-		password := val.Get("Password").String()
+		g.Go(func() error {
 
-		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			return nil, err
-		}
-		hashedPassword := string(hash)
+			sem <- struct{}{}
+			defer func() { <-sem }()
 
-		id := index + 1
+			name := val.Get("Name").String()
+			email := val.Get("Email").String()
+			mobile := val.Get("Mobile").String()
+			password := val.Get("Password").String()
 
-		student := model.Student{id, name, email, mobile, hashedPassword, clientId}
+			hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+			if err != nil {
+				return err
+			}
 
-		if err = ss.StudentRepository.Create(ctx, &student); err != nil {
-			return nil, err
-		}
+			student := model.Student{Id: index + 1, Name: name, Email: email, Mobile: mobile, Password: string(hash), ClientId: clientId}
 
-		if err = emailConfig.SendEmail(student); err != nil {
-			log.Println("Error while sending email", err)
-		}
+			if err = ss.StudentRepository.Create(ctx, &student); err != nil {
+				return err
+			}
 
-		students = append(students, student)
+			if err = emailConfig.SendEmail(student); err != nil {
+				log.Println("Error while sending email", err)
+			}
+
+			students[index] = student
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return students, nil
