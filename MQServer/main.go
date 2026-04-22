@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -49,10 +50,18 @@ func main() {
 
 	var forever chan struct{}
 
+	// FIXED worker pool with configurable concurrency
+	workerCount := runtime.NumCPU()
+	sem := make(chan struct{}, workerCount)
+
 	go func() {
 		for d := range msgs {
 			log.Printf("Received a message: %s", d.Body)
-			HlsVideoConversion(string(d.Body))
+			sem <- struct{}{}
+			go func() {
+				defer func() { <-sem }()
+				HlsVideoConversion(string(d.Body))
+			}()
 		}
 	}()
 
