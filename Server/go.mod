@@ -1,6 +1,6 @@
 module github.com/mskKandula/oes
 
-go 1.18
+go 1.26.0
 
 require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
@@ -17,6 +17,7 @@ require (
 	github.com/tidwall/gjson v1.14.4
 	github.com/tidwall/sjson v1.2.5
 	golang.org/x/crypto v0.8.0
+	golang.org/x/sync v0.20.0
 	google.golang.org/grpc v1.54.0
 	google.golang.org/protobuf v1.30.0
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
