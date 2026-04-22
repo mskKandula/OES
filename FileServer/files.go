@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -13,8 +14,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	stringsArr := strings.Split(currDir, "/")
-	dirToServe := "/" + stringsArr[1] + "/" + stringsArr[2] + "/"
+	stringsArr := strings.Split(currDir, string(os.PathSeparator))
+	dirToServe := filepath.Join(stringsArr...)
 	http.Handle("/", http.FileServer(http.Dir(dirToServe)))
 	log.Fatal(http.ListenAndServe(":8887", nil))
 }
