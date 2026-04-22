@@ -17,7 +17,7 @@
     "ion-sdk-js": "^1.8.2",
     "jszip": "^3.10.1",
     "sass": "^1.26.5",
-    "sass-loader": "^8.0.2",
+    "sass-loader": "^12.6.0",
     "simple-keyboard": "^3.2.38",
     "simple-keyboard-layouts": "^3.0.55",
     "swiper": "^5.2.0",
@@ -32,29 +32,37 @@
     "xlsx": "^0.17.0"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "~4.5.0",
-    "@vue/cli-plugin-eslint": "~4.5.0",
-    "@vue/cli-plugin-router": "^4.5.13",
-    "@vue/cli-plugin-vuex": "^4.5.13",
-    "@vue/cli-service": "~4.5.0",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^6.7.2",
-    "eslint-plugin-vue": "^6.2.2",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-plugin-router": "^5.0.0",
+    "@vue/cli-plugin-vuex": "^5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "@babel/eslint-parser": "^7.18.2",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^8.0.3",
     "vue-template-compiler": "^2.6.11"
   },
   "eslintConfig": {
     "root": true,
     "env": {
-      "node": true
+      "node": true,
+      "browser": true
     },
     "extends": [
       "plugin:vue/essential",
       "eslint:recommended"
     ],
     "parserOptions": {
-      "parser": "babel-eslint"
+      "parser": "@babel/eslint-parser",
+     "requireConfigFile":false
     },
-    "rules": {}
+    "rules": {
+      "vue/multi-word-component-names": "off",
+      "no-unused-vars": "warn",
+      "no-undef": "warn",
+      "vue/no-dupe-keys": "warn",
+      "no-dupe-keys": "warn"
+    }
   },
   "browserslist": [
     "> 1%",
