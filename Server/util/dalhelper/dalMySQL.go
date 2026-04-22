@@ -23,14 +23,15 @@ func GetMySQLConnection(mySqlDSN string) (*sql.DB, error) {
 		if err != nil {
 			connectionError = err
 		}
-		//set maximum number of idle connections to handle
-		connection.SetMaxIdleConns(100)
-		//set maximum number of open connections to handle
-		connection.SetMaxOpenConns(1000)
-		//Connection alive duration
-		// duration := 3 * 24 * time.Hour
-		duration := 4 * time.Hour
-		connection.SetConnMaxLifetime(duration)
+		// Optimized connection pool settings for better performance
+		// Increased idle connections to reduce connection overhead
+		connection.SetMaxIdleConns(50)
+		// Increased max open connections for better concurrency
+		connection.SetMaxOpenConns(200)
+		// Reduced idle timeout to prevent stale connections
+		connection.SetConnMaxIdleTime(10 * time.Minute)
+		// Connection max lifetime to ensure fresh connections
+		connection.SetConnMaxLifetime(1 * time.Hour)
 		sqlConnection = connection
 	})
 	return sqlConnection, connectionError
