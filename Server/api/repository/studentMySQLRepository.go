@@ -20,8 +20,8 @@ func NewStudentMySQLRepository(rc *RepositoryConfig) model.StudentRepository {
 
 func (sr *studentMySQLRepository) Create(ctx context.Context, student *model.Student) error {
 
-	err := withTransaction(sr.MySQLDB, func(tx *sql.Tx) error {
-		query, err := tx.Prepare("INSERT INTO Students(name, email, mobileNo, password,clientId) VALUES(?,?,?,?,?)")
+	err := withTransactionContext(ctx, sr.MySQLDB, func(tx *sql.Tx) error {
+		query, err := tx.PrepareContext(ctx, "INSERT INTO Students(name, email, mobileNo, password,clientId) VALUES(?,?,?,?,?)")
 		if err != nil {
 			return err
 		}
@@ -36,7 +36,7 @@ func (sr *studentMySQLRepository) Create(ctx context.Context, student *model.Stu
 			return err
 		}
 
-		query, err = tx.Prepare("INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
+		query, err = tx.PrepareContext(ctx, "INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
 		if err != nil {
 			return err
 		}
