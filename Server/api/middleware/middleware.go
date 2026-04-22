@@ -3,7 +3,7 @@ package middleware
 import (
 	"errors"
 	"net/http"
-	"os"
+	"sync"
 	"time"
 
 	jwt "github.com/dgrijalva/jwt-go"
@@ -11,50 +11,52 @@ import (
 	"github.com/mskKandula/oes/api/model"
 )
 
+var (
+	jwtKey     []byte
+	jwtKeyOnce sync.Once
+)
+
+// Initialize JWT key once at startup
+func initJWTKey() {
+	jwtKeyOnce.Do(func() {
+		// This should ideally come from environment variable or config
+		jwtKey = []byte("7yt65U745TR57lo9h%$fre#$TR43EW")
+	})
+}
+
 func GenerateJWT(creds model.UserLogin, id int, userType, clientId string) (string, time.Time, error) {
+	// Initialize JWT key if not already done
+	initJWTKey()
 
-	var err error
-
-	//Creating Access Token
-	os.Setenv("jwtKey", "7yt65U745TR57lo9h%$fre#$TR43EW") //this should be in an env file
-
-	atClaims := jwt.MapClaims{}
-
-	atClaims["authorized"] = true
-
-	atClaims["clientId"] = clientId
-
-	atClaims["id"] = id
-
-	atClaims["userType"] = userType
-
+	// Create token with pre-populated claims map for better performance
 	expirationTime := time.Now().Add(15 * time.Minute)
-	
-	// standard claim for expiration
-	atClaims["exp"] = expirationTime.Unix()
+
+	atClaims := jwt.MapClaims{
+		"authorized": true,
+		"clientId":   clientId,
+		"id":         id,
+		"userType":   userType,
+		"exp":        expirationTime.Unix(),
+	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, atClaims)
-
-	tokenString, err := token.SignedString([]byte(os.Getenv("jwtKey")))
+	tokenString, err := token.SignedString(jwtKey)
 
 	if err != nil {
 		return "", expirationTime, err
 	}
 
 	return tokenString, expirationTime, nil
-
 }
 
 func ValidateToken(tokenString, role string) (interface{}, interface{}, interface{}, error) {
+	// Initialize JWT key if not already done
+	initJWTKey()
 
-	// Initialize a new instance of `Claims`
+	// Parse token with optimized claims extraction
 	claims := jwt.MapClaims{}
-	// Parse the JWT string and store the result in `claims`.
-	// Note that we are passing the key in this method as well. This method will return an error
-	// if the token is invalid (if it has expired according to the expiry time we set on sign in),
-	// or if the signature does not match
 	token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(os.Getenv("jwtKey")), nil
+		return jwtKey, nil
 	})
 
 	if err != nil {
@@ -62,15 +64,19 @@ func ValidateToken(tokenString, role string) (interface{}, interface{}, interfac
 	}
 
 	if !token.Valid {
-		return 0, "", "", err
+		return 0, "", "", errors.New("invalid token")
 	}
 
-	id := claims["id"]
+	// Extract claims with existence checks
+	id, idOk := claims["id"]
+	userType, userTypeOk := claims["userType"]
+	clientId, clientIdOk := claims["clientId"]
 
-	userType := claims["userType"]
+	if !idOk || !userTypeOk || !clientIdOk {
+		return 0, "", "", errors.New("invalid token claims")
+	}
 
-	clientId := claims["clientId"]
-
+	// Check role authorization
 	if userType.(string) != role && role != "Common" {
 		return 0, "", "", errors.New("unauthorized to access this resource")
 	}
