@@ -75,10 +75,10 @@ func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 			fpath := filepath.Join(dir, file.Name)
 
 			// Make Folder
-			// if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			// 	log.Println(err)
-			// 	continue
-			// }
+			if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+				log.Println(err)
+				continue
+			}
 
 			// Create/Open dst File
 			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE, file.Mode())
@@ -140,6 +140,8 @@ func StudentExamProofsInsertion(db *ds.DataSources, vals []interface{}) error {
 	if err != nil {
 		return err
 	}
+
+	defer query.Close()
 
 	_, err = query.Exec(vals...)
 	if err != nil {
