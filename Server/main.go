@@ -6,7 +6,7 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"syscall"
+	"runtime"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -39,15 +39,9 @@ var (
 func main() {
 	fmt.Println("Lets start OES")
 
-	// Increase resources limitations
-	var rLimit syscall.Rlimit
-	if err := syscall.Getrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		panic(err)
-	}
-	rLimit.Cur = rLimit.Max
-	if err := syscall.Setrlimit(syscall.RLIMIT_NOFILE, &rLimit); err != nil {
-		panic(err)
-	}
+	// Set GOMAXPROCS to utilize all CPU cores for better performance
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	log.Printf("Using %d CPU cores", runtime.NumCPU())
 
 	if err = cnf.Setup("config.json"); err != nil {
 		log.Fatalf("Setup Failed:%v", err.Error())
@@ -60,25 +54,28 @@ func main() {
 	f, _ := os.Create("Logs/gin.log")
 	gin.DefaultWriter = io.MultiWriter(f)
 
-	// fs := http.FileServer(http.Dir("../Client/oes/dist"))
-
 	defer func() {
-		// close(handler.BufChan)
 		close(handler.ResultPaths)
+		if f != nil {
+			f.Close()
+		}
 	}()
 
 	router := api.InitRouter()
-	// go func() {
-	// 	r.Run(":8081")
-	// }()
-	// router.Run(":9000")
 
+	// Optimized HTTP server configuration
 	s := &http.Server{
-		Addr:           ":9000",
-		Handler:        router,
-		ReadTimeout:    60 * time.Second,
-		WriteTimeout:   60 * time.Second,
-		MaxHeaderBytes: 1 << 20,
+		Addr:              ":9000",
+		Handler:           router,
+		ReadTimeout:       30 * time.Second,  // Reduced from 60s for faster timeout
+		WriteTimeout:      30 * time.Second,  // Reduced from 60s for faster timeout
+		IdleTimeout:       120 * time.Second, // Added idle timeout
+		ReadHeaderTimeout: 10 * time.Second,  // Added header read timeout
+		MaxHeaderBytes:    1 << 20,           // 1MB
 	}
-	s.ListenAndServe()
+
+	log.Printf("Server starting on %s", s.Addr)
+	if err := s.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("Server failed to start: %v", err)
+	}
 }
