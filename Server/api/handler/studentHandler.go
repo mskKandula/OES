@@ -36,7 +36,10 @@ func (h *Handler) StudentsRegister(c *gin.Context) {
 		return
 	}
 
-	if strings.Split(file.Filename, ".")[1] != "xlsx" {
+	base := filepath.Base(file.Filename)
+	ext := strings.ToLower(filepath.Ext(base))
+
+	if ext != ".xlsx" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
 		return
 	}
@@ -101,7 +104,27 @@ func (h *Handler) DownloadStudents(c *gin.Context) {
 }
 
 func (h *Handler) GetQuestions(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines, "examId": examId})
+	// Get examId from query parameter
+	examIdStr := c.Query("examId")
+	if examIdStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "examId is required"})
+		return
+	}
+
+	examId, err := strconv.ParseInt(examIdStr, 10, 64)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid examId"})
+		return
+	}
+
+	// Retrieve questions from cache
+	questions, exists := h.QuestionCache.Get(examId)
+	if !exists {
+		c.JSON(http.StatusNotFound, gin.H{"error": "questions not found for this exam"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"questions": questions, "examId": examId})
 }
 
 func (h *Handler) UploadExamProof(c *gin.Context) {
@@ -126,7 +149,7 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 
 	file := bindFile.ZipFile
 	base := filepath.Base(file.Filename)
-	ext  := strings.ToLower(filepath.Ext(base))
+	ext := strings.ToLower(filepath.Ext(base))
 
 	if ext != ".zip" {
 		c.JSON(http.StatusUnsupportedMediaType, gin.H{"error": "Unsupported File Format"})
@@ -146,31 +169,6 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to save file"})
 		return
 	}
-
-	// FilePath Creation
-	// dstFile, err := Create(dstPath)
-
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	// fileData, err := file.Open()
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	// defer fileData.Close()
-
-	// _, err = io.Copy(dstFile, fileData)
-
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	// defer dstFile.Close()
 
 	ResultPaths <- ProofData{
 		ClientId:    clientId,
