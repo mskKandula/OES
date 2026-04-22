@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"time"
 
@@ -30,27 +31,29 @@ func (cs *commonMySQLRepository) LoginUser(ctx context.Context, userLogin model.
 		id       int
 		password string
 		clientId string
-		userType string = "Examiner"
+		userType string
 	)
 
-	row := cs.MySQLDB.QueryRowContext(ctx, "select id,password,clientId from Examiners where email=?", userLogin.Email)
+	query := `
+		SELECT id, password, clientId, 'Examiner' AS userType
+		FROM Examiners
+		WHERE email = ?
 
-	err := row.Scan(&id, &password, &clientId)
+		UNION ALL
+
+		SELECT id, password, clientId, 'Student' AS userType
+		FROM Students
+		WHERE email = ?
+		LIMIT 1`
+
+	row := cs.MySQLDB.QueryRowContext(ctx, query, userLogin.Email, userLogin.Email)
+
+	err := row.Scan(&id, &password, &clientId, &userType)
 
 	if err != nil {
-		if err == sql.ErrNoRows {
-			row := cs.MySQLDB.QueryRowContext(ctx, "select id,password,clientId from Students where email=?", userLogin.Email)
-
-			err = row.Scan(&id, &password, &clientId)
-
-			if err != nil {
-				if err == sql.ErrNoRows {
-					return 0, "", "", "", err
-				}
-			}
-			userType = "Student"
-		}
+		return 0, "", "", "", err
 	}
+
 	return id, userType, password, clientId, nil
 }
 
@@ -58,22 +61,20 @@ func (cs *commonMySQLRepository) ReadRoutes(ctx context.Context, userId int, use
 
 	var routes []model.Route
 
-	// rows, err := Db.Query(`select * from menu where id in(
-	// 	select menuId from roleMenu where roleId =(
-	// 	select roleId from userRole where userId=(
-	// 	select id from examiner where email=?
-	// 	)))`, email)
+	// --- Cache read ---
+	cacheKey := fmt.Sprintf("routes:%s", userType)
 
-	// if email != "admin@example.org" {
-	// 	val = 2
-	// } else {
-	// 	val = 1
-	// }
+	val, err := cs.Redis.Get(ctx, cacheKey).Bytes()
+	if err != nil {
+		log.Println(err)
+	} else {
+		if val != nil {
+			json.Unmarshal(val, &routes)
+			return routes, nil
+		}
+	}
 
-	// rows, err := Db.Query(`select * from menu where id in(
-	// 	select menuId from roleMenu where roleId =(
-	// 	select roleId from userRole where userId=?))`, val)
-
+	// --- MySQL fallback ---
 	rows, err := cs.MySQLDB.QueryContext(ctx, `SELECT m.id,m.name,m.url,m.description FROM Role r
     INNER JOIN UserRole ur ON r.id = ur.roleId
 	INNER JOIN RoleMenu rm ON ur.roleId = rm.roleId
@@ -93,6 +94,17 @@ func (cs *commonMySQLRepository) ReadRoutes(ctx context.Context, userId int, use
 			return routes, err
 		}
 		routes = append(routes, route)
+	}
+
+	// --- Cache write ---
+	jsonData, err := json.Marshal(routes)
+	if err != nil {
+		log.Println(err)
+	} else {
+		err = cs.Redis.Set(ctx, cacheKey, jsonData, 24*time.Hour).Err()
+		if err != nil {
+			log.Println(err)
+		}
 	}
 
 	return routes, nil
