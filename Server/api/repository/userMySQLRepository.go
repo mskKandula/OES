@@ -3,9 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"strings"
 	"time"
 
+	redis "github.com/go-redis/redis/v8"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/google/uuid"
 	"github.com/mskKandula/oes/api/model"
@@ -16,6 +16,7 @@ type userMySQLRepository struct {
 	MySQLDB  *sql.DB
 	RabbitMQ *amqp.Channel
 	Queue    amqp.Queue
+	Redis    *redis.Client
 }
 
 func NewUserMySQLRepository(rc *RepositoryConfig) model.UserRepository {
@@ -23,22 +24,21 @@ func NewUserMySQLRepository(rc *RepositoryConfig) model.UserRepository {
 		MySQLDB:  rc.MySQLDB,
 		RabbitMQ: rc.RabbitMQ,
 		Queue:    rc.Queue,
+		Redis:    rc.Redis,
 	}
 }
 
 func (ur *userMySQLRepository) Create(ctx context.Context, user model.User, password string) error {
 
-	err := withTransaction(ur.MySQLDB, func(tx *sql.Tx) error {
+	err := withTransactionContext(ctx, ur.MySQLDB, func(tx *sql.Tx) error {
 		query, err := tx.Prepare("INSERT INTO Examiners(name, age, email, mobileNo, password,clientId) VALUES(?,?,?,?,?,?)")
 		if err != nil {
 			return err
 		}
 
-		id := uuid.New()
+		id := uuid.New().String()
 
-		cid := strings.Replace(id.String(), "-", "", -1)
-
-		result, err := query.ExecContext(ctx, user.Name, user.Age, user.Email, user.MobileNo, password, cid)
+		result, err := query.ExecContext(ctx, user.Name, user.Age, user.Email, user.MobileNo, password, id)
 		if err != nil {
 			return err
 		}
@@ -48,7 +48,7 @@ func (ur *userMySQLRepository) Create(ctx context.Context, user model.User, pass
 			return err
 		}
 
-		query, err = tx.Prepare("INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
+		query, err = tx.PrepareContext(ctx, "INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
 		if err != nil {
 			return err
 		}
@@ -66,9 +66,9 @@ func (ur *userMySQLRepository) Create(ctx context.Context, user model.User, pass
 
 func (ur *userMySQLRepository) CreateVideo(ctx context.Context, fileName, videoUrl, imagePath, clientId, dstpath string) error {
 
-	err := withTransaction(ur.MySQLDB, func(tx *sql.Tx) error {
+	err := withTransactionContext(ctx, ur.MySQLDB, func(tx *sql.Tx) error {
 		// Insert into DB
-		query, err := tx.Prepare("INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description,clientId) VALUES(?,?,?,?,?,?)")
+		query, err := tx.PrepareContext(ctx, "INSERT INTO VideoContent(name, videoUrl,thumbnailPath,contentType,description,clientId) VALUES(?,?,?,?,?,?)")
 		if err != nil {
 			return err
 		}
@@ -99,16 +99,19 @@ func (ur *userMySQLRepository) CreateVideo(ctx context.Context, fileName, videoU
 		return err
 	})
 
+	ur.Redis.Del(ctx, clientId) //Invalidate the video cache to prevent stale
 	return err
 }
 
 func (ur *userMySQLRepository) ExamCreation(ctx context.Context, clientId, examName, examType string) (int64, error) {
 
 	// Insert into DB
-	query, err := ur.MySQLDB.Prepare("INSERT INTO Exams(clientId,name,type) VALUES(?,?,?)")
+	query, err := ur.MySQLDB.PrepareContext(ctx, "INSERT INTO Exams(clientId,name,type) VALUES(?,?,?)")
 	if err != nil {
 		return 0, err
 	}
+
+	defer query.Close()
 
 	result, err := query.ExecContext(ctx, clientId, examName, examType)
 	if err != nil {
