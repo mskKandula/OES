@@ -8,6 +8,12 @@ import (
 	"github.com/mskKandula/oes/api/model"
 )
 
+const (
+	createStudentQuery  = "INSERT INTO Students(name, email, mobileNo, password, clientId) VALUES(?,?,?,?,?)"
+	createUserRoleQuery = "INSERT INTO UserRole(userId, roleId) VALUES(?,?)"
+	readAllStudentsQuery = "SELECT id, name, email, mobileNo FROM Students WHERE clientId=?"
+)
+
 type studentMySQLRepository struct {
 	MySQLDB *sql.DB
 }
@@ -20,13 +26,11 @@ func NewStudentMySQLRepository(rc *RepositoryConfig) model.StudentRepository {
 
 func (sr *studentMySQLRepository) Create(ctx context.Context, student *model.Student) error {
 
-	err := withTransactionContext(ctx, sr.MySQLDB, func(tx *sql.Tx) error {
-		query, err := tx.PrepareContext(ctx, "INSERT INTO Students(name, email, mobileNo, password,clientId) VALUES(?,?,?,?,?)")
-		if err != nil {
-			return err
-		}
-
-		result, err := query.ExecContext(ctx, student.Name, student.Email, student.Mobile, student.Password, student.ClientId)
+	return withTransactionContext(ctx, sr.MySQLDB, func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx,
+			createStudentQuery,
+			student.Name, student.Email, student.Mobile, student.Password, student.ClientId,
+		)
 		if err != nil {
 			return err
 		}
@@ -36,38 +40,33 @@ func (sr *studentMySQLRepository) Create(ctx context.Context, student *model.Stu
 			return err
 		}
 
-		query, err = tx.PrepareContext(ctx, "INSERT INTO UserRole(userId, roleId) VALUES(?,?)")
-		if err != nil {
-			return err
-		}
-
-		_, err = query.ExecContext(ctx, lId, 2)
-		if err != nil {
-			return err
-		}
-
+		_, err = tx.ExecContext(ctx,
+			createUserRoleQuery,
+			lId, 2,
+		)
 		return err
 	})
-
-	return err
 }
 
 func (sr *studentMySQLRepository) ReadAll(ctx context.Context, clientId string) ([]model.Student, error) {
 	var students []model.Student
-	rows, err := sr.MySQLDB.QueryContext(ctx, `SELECT id,name,email,mobileNo from Students where clientId=?`, clientId)
+
+	rows, err := sr.MySQLDB.QueryContext(ctx, readAllStudentsQuery, clientId)
 	if err != nil {
 		return nil, err
 	}
-
 	defer rows.Close()
 
 	for rows.Next() {
 		var student model.Student
-
 		if err := rows.Scan(&student.Id, &student.Name, &student.Email, &student.Mobile); err != nil {
 			return nil, err
 		}
 		students = append(students, student)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	return students, nil
