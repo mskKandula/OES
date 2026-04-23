@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"log"
 	"runtime"
 
@@ -44,7 +45,7 @@ func initSources() (*websock.Pool, *handler.Handler) {
 
 	// Worker Pool
 	for i := 0; i < maxWorkers; i++ {
-		go runningProcess.UnzipFile(handler.ResultPaths, ds)
+		go runningProcess.UnzipFile(context.Background(), handler.ResultPaths, ds)
 		go websock.Read(websock.ClientConnChan)
 	}
 
