@@ -2,6 +2,7 @@ package runningProcess
 
 import (
 	"archive/zip"
+	"context"
 	"io"
 	"log"
 	"os"
@@ -11,53 +12,10 @@ import (
 	ds "github.com/mskKandula/oes/dataSources"
 )
 
-// func HlsVideoConversion(resultChan <-chan string) {
-
-// 	for result := range resultChan {
-// 		dir, file := filepath.Split(result)
-
-// 		// For single(original resolution)
-// 		// cmd := exec.Command("ffmpeg", "-i", paths[4], "-codec:", "copy", "-start_number", "0", "-hls_time", "10", "-hls_list_size", "0", "-f", "hls", "index.m3u8")
-
-// 		// For Multiple(360p,480p & 720p resolutions)
-// 		cmd := exec.Command("ffmpeg", "-i", result, "-map", "0:v:0", "-map", "0:a:0", "-map",
-// 			"0:v:0", "-map", "0:a:0", "-map", "0:v:0", "-map", "0:a:0", "-c:v", "libx264", "-crf",
-// 			"22", "-c:a", "aac", "-ar", "48000", "-filter:v:0", "scale=w=480:h=360", "-maxrate:v:0",
-// 			"600k", "-b:a:0", "64k", "-filter:v:1", "scale=w=640:h=480", "-maxrate:v:1", "900k",
-// 			"-b:a:1", "128k", "-filter:v:2", "scale=w=1280:h=720", "-maxrate:v:2", "1500k", "-b:a:2",
-// 			"128k", "-var_stream_map", "v:0,a:0,name:360p v:1,a:1,name:480p v:2,a:2,name:720p",
-// 			"-preset", "slow", "-hls_list_size", "0", "-threads", "0", "-f", "hls", "-hls_playlist_type",
-// 			"event", "-hls_time", "10", "-hls_flags", "independent_segments", "-master_pl_name",
-// 			"index.m3u8", "-y", dir+"%v/index.m3u8")
-
-// 		err := cmd.Run()
-
-// 		if err != nil {
-// 			log.Println(err)
-// 			continue
-// 		}
-
-// 		imageFileName := strings.Split(file, ".")[0] + ".png"
-
-// 		cmd = exec.Command("ffmpeg", "-i", result, "-ss", "00:00:01.000", "-vframes", "1", filepath.Join(dir, imageFileName))
-
-// 		err = cmd.Run()
-
-// 		if err != nil {
-// 			log.Println(err)
-// 			continue
-// 		}
-
-// 		err = os.Remove(result)
-
-// 		if err != nil {
-// 			log.Println(err)
-// 		}
-// 	}
-
-// }
-
-func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
+// UnzipFile receives exam proof zip paths from the channel, extracts each zip
+// into the media directory, records the proof paths in the DB, then removes
+// the original zip.
+func UnzipFile(ctx context.Context, resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 
 	for result := range resultPaths {
 		dir := filepath.Join("../media/examProofs", result.ClientId, result.ExamId, result.UserId)
@@ -71,82 +29,71 @@ func UnzipFile(resultPaths <-chan handler.ProofData, db *ds.DataSources) {
 		var vals []interface{}
 
 		for _, file := range reader.File {
-
 			fpath := filepath.Join(dir, file.Name)
 
-			// Make Folder
-			if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+			if err := extractFile(file, fpath); err != nil {
 				log.Println(err)
 				continue
 			}
-
-			// Create/Open dst File
-			outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE, file.Mode())
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			// Open src File
-			inFile, err := file.Open()
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			// Copy src to dst
-			_, err = io.Copy(outFile, inFile)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			// Close the file without defer to close before next iteration of loop
-			outFile.Close()
-			inFile.Close()
 
 			vals = append(vals, result.UserId, result.ExamId, fpath)
 		}
 
-		reader.Close()
+		if err := reader.Close(); err != nil {
+			log.Println(err)
+		}
 
-		if err = StudentExamProofsInsertion(db, vals); err != nil {
+		// Nothing was extracted successfully; skip DB insert and zip removal
+		if len(vals) == 0 {
+			continue
+		}
+
+		if err := StudentExamProofsInsertion(ctx, db, vals); err != nil {
 			log.Println(err)
 			continue
 		}
 
-		err = os.Remove(result.ZipFilePath)
-		if err != nil {
+		if err := os.Remove(result.ZipFilePath); err != nil {
 			log.Println(err)
 		}
 	}
 }
 
-func StudentExamProofsInsertion(db *ds.DataSources, vals []interface{}) error {
+// extractFile extracts a single zip entry to fpath.
+func extractFile(file *zip.File, fpath string) error {
+	if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
+		return err
+	}
 
-	sqlStr := "INSERT INTO StudentExamProofs(studentId,examId,proofPath) VALUES "
+	outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE, file.Mode())
+	if err != nil {
+		return err
+	}
+	defer outFile.Close()
 
-	totalVals := (len(vals) / 3)
-	// For Insert Many
+	inFile, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer inFile.Close()
+
+	_, err = io.Copy(outFile, inFile)
+	return err
+}
+
+// StudentExamProofsInsertion bulk-inserts proof records for a student's exam.
+func StudentExamProofsInsertion(ctx context.Context, db *ds.DataSources, vals []interface{}) error {
+
+	insertQuery := "INSERT INTO StudentExamProofs(studentId, examId, proofPath) VALUES "
+
+	totalVals := len(vals) / 3
 	for i := 0; i < totalVals; i++ {
-		sqlStr += "(?,?,?),"
+		insertQuery += "(?,?,?),"
 	}
 
-	//trim the last
-	sqlStr = sqlStr[0 : len(sqlStr)-1]
+	// Trim the trailing comma
+	insertQuery = insertQuery[:len(insertQuery)-1]
 
-	//prepare the statement
-	query, err := db.MySQLDB.Prepare(sqlStr)
-	if err != nil {
-		return err
-	}
-
-	defer query.Close()
-
-	_, err = query.Exec(vals...)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	_, err := db.MySQLDB.ExecContext(ctx, insertQuery, vals...)
+	return err
 }
