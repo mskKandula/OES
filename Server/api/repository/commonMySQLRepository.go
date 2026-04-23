@@ -91,9 +91,13 @@ func (cs *commonMySQLRepository) ReadRoutes(ctx context.Context, userId int, use
 		var route model.Route
 
 		if err := rows.Scan(&route.Id, &route.Name, &route.Url, &route.Description); err != nil {
-			return routes, err
+			return nil, err
 		}
 		routes = append(routes, route)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 
 	// --- Cache write ---
@@ -138,17 +142,21 @@ func (cs *commonMySQLRepository) ReadVideos(ctx context.Context, clientId string
 		var video model.Video
 
 		if err := rows.Scan(&video.Name, &video.VideoUrl, &video.ThumbnailPath, &video.Description); err != nil {
-			return videos, err
+			return nil, err
 		}
 		videos = append(videos, video)
 	}
 
-	json, err := json.Marshal(videos)
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	jsonData, err := json.Marshal(videos)
 
 	if err != nil {
 		log.Println(err)
 	} else {
-		err = cs.Redis.Set(ctx, clientId, json, 15*time.Minute).Err()
+		err = cs.Redis.Set(ctx, clientId, jsonData, 15*time.Minute).Err()
 		if err != nil {
 			log.Println(err)
 		}
