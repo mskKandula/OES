@@ -22,6 +22,6 @@ type UserService interface {
 
 type UserRepository interface {
 	Create(ctx context.Context, user User, password string) error
-	CreateVideo(ctx context.Context, fileName, url, imagePath, clientId, dstPath string) error
+	CreateVideo(ctx context.Context, fileName, url, imagePath, clientId string) error
 	ExamCreation(ctx context.Context, clientId, examName, examType string) (int64, error)
 }
