@@ -41,7 +41,7 @@ func initSources() (*websock.Pool, *handler.Handler) {
 	// go runningProcess.HlsVideoConversion(handler.BufChan)
 
 	pool := websock.NewPool()
-	go pool.Start(ds)
+	go pool.Start(ds.Redis)
 
 	// Worker Pool
 	for i := 0; i < maxWorkers; i++ {
@@ -112,11 +112,12 @@ func InitRouter() *gin.Engine {
 func getUserService(ds *ds.DataSources, client pb.QuestGenServiceClient) model.UserService {
 
 	userMySQLRepository := repository.NewUserMySQLRepository(&repository.RepositoryConfig{
-		MySQLDB: ds.MySQLDB, RabbitMQ: ds.RabbitMQ, Queue: ds.Queue, Redis: ds.Redis})
+		MySQLDB: ds.MySQLDB, Redis: ds.Redis})
 
 	userService := service.NewUserService(&service.UserServiceConfig{
 		UserRepository: userMySQLRepository,
 		QuestgenClient: client,
+		Publisher:      ds.Publisher,
 	})
 
 	return userService
@@ -129,6 +130,7 @@ func getStudentService(ds *ds.DataSources) model.StudentService {
 
 	studentService := service.NewStudentService(&service.StudentServiceConfig{
 		StudentRepository: studentMySQLRepository,
+		Publisher:         ds.Publisher,
 	})
 
 	return studentService
