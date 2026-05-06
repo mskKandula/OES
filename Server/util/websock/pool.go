@@ -8,10 +8,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/go-redis/redis/v8"
 	"github.com/gobwas/ws"
 	"github.com/gobwas/ws/wsutil"
 	"github.com/mailru/easygo/netpoll"
-	ds "github.com/mskKandula/oes/dataSources"
 )
 
 // var Conns = make(map[*websocket.Conn]bool)
@@ -49,11 +49,11 @@ func NewPool() *Pool {
 	return poolInit
 }
 
-func (pool *Pool) Start(ds *ds.DataSources) {
+func (pool *Pool) Start(redis *redis.Client) {
 
 	ticker := time.NewTicker(HeartBeatInterval)
 
-	go pool.listenPubSubChannel(ds)
+	go pool.listenPubSubChannel(redis)
 	poller, err := netpoll.New(nil)
 	if err != nil {
 		log.Println(err)
@@ -134,7 +134,7 @@ func (pool *Pool) Start(ds *ds.DataSources) {
 
 		case message := <-pool.Broadcast:
 			// Publish the message on "general" channel
-			pool.publishMessage(message, ds)
+			pool.publishMessage(message, redis)
 
 		case <-ticker.C:
 			// Process clients incrementally to reduce memory pressure
@@ -167,9 +167,9 @@ func (pool *Pool) Start(ds *ds.DataSources) {
 }
 
 // Redis Publish message functionality
-func (pool *Pool) publishMessage(payload []byte, ds *ds.DataSources) {
+func (pool *Pool) publishMessage(payload []byte, redis *redis.Client) {
 
-	err := ds.Redis.Publish(ctx, PubSubGeneralChannel, payload).Err()
+	err := redis.Publish(ctx, PubSubGeneralChannel, payload).Err()
 
 	if err != nil {
 		log.Println(err)
@@ -178,9 +178,9 @@ func (pool *Pool) publishMessage(payload []byte, ds *ds.DataSources) {
 }
 
 // Redis Subscribe & Listen on channel("general") functionality
-func (pool *Pool) listenPubSubChannel(ds *ds.DataSources) {
+func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 
-	pubsub := ds.Redis.Subscribe(ctx, PubSubGeneralChannel)
+	pubsub := redis.Subscribe(ctx, PubSubGeneralChannel)
 
 	ch := pubsub.Channel()
 
