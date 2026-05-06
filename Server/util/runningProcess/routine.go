@@ -82,6 +82,7 @@ func extractFile(file *zip.File, fpath string) error {
 }
 
 // StudentExamProofsInsertion bulk-inserts proof records for a student's exam.
+// vals must be a flat slice of (studentId, examId, proofPath) triples.
 func StudentExamProofsInsertion(ctx context.Context, db *ds.DataSources, vals []interface{}) error {
 
 	insertQuery := "INSERT INTO StudentExamProofs(studentId, examId, proofPath) VALUES "
