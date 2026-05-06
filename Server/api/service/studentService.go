@@ -6,16 +6,24 @@ import (
 	"log"
 	"runtime"
 	"strings"
+	"sync"
 
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/mskKandula/oes/api/model"
-	"github.com/mskKandula/oes/util/emailConfig"
 	xlsx "github.com/tealeg/xlsx/v3"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
+
+// emailPayload is the message body published to the "email" RabbitMQ queue.
+type emailPayload struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Mobile   string `json:"mobile"`
+	Password string `json:"password"` // plaintext — for welcome email only
+}
 
 var (
 	requiredKeys = []string{
@@ -28,17 +36,21 @@ var (
 
 type studentService struct {
 	StudentRepository model.StudentRepository
+	Publisher         model.Publisher
+	publishMu         sync.Mutex // guards concurrent Publish calls — *amqp.Channel is not goroutine-safe
 }
 
-// studentServiceCOnfig will hold repositories that will eventually be injected into this
-// this service layer
+// StudentServiceConfig holds dependencies injected into the student service layer.
 type StudentServiceConfig struct {
 	StudentRepository model.StudentRepository
+	// Publisher is used to publish async email jobs to the message queue.
+	Publisher model.Publisher
 }
 
 func NewStudentService(ssc *StudentServiceConfig) model.StudentService {
 	return &studentService{
 		StudentRepository: ssc.StudentRepository,
+		Publisher:         ssc.Publisher,
 	}
 }
 
@@ -77,8 +89,23 @@ func (ss *studentService) CreateStudents(ctx context.Context, byteArray []byte, 
 				return err
 			}
 
-			if err = emailConfig.SendEmail(student); err != nil {
-				log.Println("Error while sending email", err)
+			// Publish an async email job to MQServer instead of sending
+			// the email synchronously here.
+			payload := emailPayload{
+				Name:     name,
+				Email:    email,
+				Mobile:   mobile,
+				Password: password, // plaintext carried only in the transient MQ message
+			}
+			if msgBody, jsonErr := json.Marshal(payload); jsonErr != nil {
+				log.Printf("email job: failed to marshal payload for %s: %v", email, jsonErr)
+			} else {
+				ss.publishMu.Lock()
+				pubErr := ss.Publisher.PublishMessageWithContext(ctx, "email", msgBody)
+				ss.publishMu.Unlock()
+				if pubErr != nil {
+					log.Printf("email job: failed to publish for %s: %v", email, pubErr)
+				}
 			}
 
 			students[index] = student
