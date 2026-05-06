@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"log"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -12,19 +13,21 @@ import (
 type userService struct {
 	UserRepository model.UserRepository
 	QuestgenClient pb.QuestGenServiceClient
+	Publisher      model.Publisher
 }
 
-// UserServiceCOnfig will hold repositories that will eventually be injected into this
-// this service layer
+// UserServiceConfig holds repositories and dependencies injected into this service layer.
 type UserServiceConfig struct {
 	UserRepository model.UserRepository
 	QuestgenClient pb.QuestGenServiceClient
+	Publisher      model.Publisher
 }
 
 func NewUserService(usc *UserServiceConfig) model.UserService {
 	return &userService{
 		UserRepository: usc.UserRepository,
 		QuestgenClient: usc.QuestgenClient,
+		Publisher:      usc.Publisher,
 	}
 }
 
@@ -43,12 +46,18 @@ func (us *userService) CreateUser(ctx context.Context, user model.User) error {
 	return nil
 }
 
+// CreateVideoFile persists the video metadata and then publishes an async encode job.
 func (us *userService) CreateVideoFile(ctx context.Context, fileName, url, imagePath, clientId, dstPath string) error {
-	if err := us.UserRepository.CreateVideo(ctx, fileName, url, imagePath, clientId, dstPath); err != nil {
+	if err := us.UserRepository.CreateVideo(ctx, fileName, url, imagePath, clientId); err != nil {
 		return err
 	}
-	return nil
 
+	// Publish the encode job after a successful DB commit.
+	if err := us.Publisher.PublishMessageWithContext(ctx, "encode", []byte(dstPath)); err != nil {
+		log.Printf("encode job: failed to publish for %s: %v", fileName, err)
+	}
+
+	return nil
 }
 
 func (us *userService) GenQuestion(ctx context.Context, requestData string) (string, error) {
@@ -58,7 +67,6 @@ func (us *userService) GenQuestion(ctx context.Context, requestData string) (str
 	}
 
 	return r.GetResponse(), nil
-
 }
 
 func (us *userService) CreateExam(ctx context.Context, clientId, examName, examType string) (int64, error) {
