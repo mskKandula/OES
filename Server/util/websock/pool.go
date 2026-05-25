@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"hash/fnv"
 	"log"
 	"sync"
 	"time"
@@ -17,8 +18,9 @@ import (
 // var Conns = make(map[*websocket.Conn]bool)
 
 const (
-	PubSubGeneralChannel = "general"
-	HeartBeatInterval    = 10 * time.Second
+	PubSubGeneralChannel        = "general"
+	HeartBeatInterval           = 10 * time.Second
+	ShardCount           uint32 = 32 // Number of shards to divide the map into
 )
 
 var (
@@ -27,21 +29,43 @@ var (
 	ClientConnChan chan *Client
 )
 
+// PoolMapShard holds its own Mutex and Map to reduce lock contention
+type PoolMapShard struct {
+	sync.RWMutex
+	Clients map[string]map[int]*Client
+}
+
 type Pool struct {
 	Register   chan *Client
 	Unregister chan *Client
-	Clients    map[string]map[int]*Client
+	Shards     []*PoolMapShard
 	Broadcast  chan []byte
-	mu         sync.RWMutex // Protects Clients map
+}
+
+func getShardIndex(key string) uint32 {
+	h := fnv.New32a()
+	h.Write([]byte(key))
+	return h.Sum32() % ShardCount
+}
+
+func (pool *Pool) getShard(id string) *PoolMapShard {
+	return pool.Shards[getShardIndex(id)]
 }
 
 func init() {
 	poolInit = &Pool{
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
-		Clients:    make(map[string]map[int]*Client),
+		Shards:     make([]*PoolMapShard, ShardCount),
 		Broadcast:  make(chan []byte, 256),
 	}
+
+	for i := 0; i < int(ShardCount); i++ {
+		poolInit.Shards[i] = &PoolMapShard{
+			Clients: make(map[string]map[int]*Client),
+		}
+	}
+
 	ClientConnChan = make(chan *Client, 200)
 }
 
@@ -51,7 +75,9 @@ func NewPool() *Pool {
 
 func (pool *Pool) Start(redis *redis.Client) {
 
-	ticker := time.NewTicker(HeartBeatInterval)
+	// Tick faster, but process only one shard per tick to spread the load
+	ticker := time.NewTicker(HeartBeatInterval / time.Duration(ShardCount))
+	var currentShardIndex uint32 = 0
 
 	go pool.listenPubSubChannel(redis)
 	poller, err := netpoll.New(nil)
@@ -68,16 +94,15 @@ func (pool *Pool) Start(redis *redis.Client) {
 
 		case newClient := <-pool.Register:
 
-			// Initialize nested map if it doesn't exist
-			pool.mu.Lock()
-			if pool.Clients[newClient.Id] == nil {
-				pool.Clients[newClient.Id] = make(map[int]*Client)
+			shard := pool.getShard(newClient.Id)
+			shard.Lock()
+			if shard.Clients[newClient.Id] == nil {
+				shard.Clients[newClient.Id] = make(map[int]*Client)
 			}
 
-			// Add client using UserId as key in the nested map
-			pool.Clients[newClient.Id][newClient.UserId] = newClient
-			poolSize := len(pool.Clients[newClient.Id])
-			pool.mu.Unlock()
+			shard.Clients[newClient.Id][newClient.UserId] = newClient
+			poolSize := len(shard.Clients[newClient.Id])
+			shard.Unlock()
 
 			fmt.Println("Size of Connection Pool: ", poolSize)
 
@@ -114,18 +139,17 @@ func (pool *Pool) Start(redis *redis.Client) {
 
 			pool.Broadcast <- byteData
 
-			// Delete client from nested map using delete() function
-			pool.mu.Lock()
-			delete(pool.Clients[newClient.Id], newClient.UserId)
+			shard := pool.getShard(newClient.Id)
+			shard.Lock()
+			delete(shard.Clients[newClient.Id], newClient.UserId)
 
-			// Clean up empty nested maps
 			poolSize := 0
-			if len(pool.Clients[newClient.Id]) == 0 {
-				delete(pool.Clients, newClient.Id)
+			if len(shard.Clients[newClient.Id]) == 0 {
+				delete(shard.Clients, newClient.Id)
 			} else {
-				poolSize = len(pool.Clients[newClient.Id])
+				poolSize = len(shard.Clients[newClient.Id])
 			}
-			pool.mu.Unlock()
+			shard.Unlock()
 
 			// Close the connection
 			newClient.Conn.Close()
@@ -138,30 +162,31 @@ func (pool *Pool) Start(redis *redis.Client) {
 
 		case <-ticker.C:
 			// Process clients incrementally to reduce memory pressure
-			pool.mu.RLock()
-			for _, clientsMap := range pool.Clients {
+			// Process one shard per tick to perfectly spread the load over the HeartBeatInterval
+			shard := pool.Shards[currentShardIndex]
+			shard.RLock()
+			for _, clientsMap := range shard.Clients {
 				for _, client := range clientsMap {
 					// Check and update IsAlive status
 					if !client.IsAlive.Load() {
-						// Unlock before sending to channel to avoid blocking
-						pool.mu.RUnlock()
+						shard.RUnlock()
 						client.Pool.Unregister <- client
-						pool.mu.RLock()
+						shard.RLock()
 						continue
 					}
 
 					client.IsAlive.Store(false)
 
-					// Send heartbeat - do this while holding read lock is safe
-					// as we're not modifying the map structure
-					// Use:
 					if err := ws.WriteFrame(client.Conn, ws.NewPingFrame(nil)); err != nil {
 						log.Println(err)
 						continue
 					}
 				}
 			}
-			pool.mu.RUnlock()
+			shard.RUnlock()
+
+			// Move to the next shard for the next tick
+			currentShardIndex = (currentShardIndex + 1) % ShardCount
 		}
 	}
 }
@@ -194,11 +219,12 @@ func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 			return
 		}
 
-		pool.mu.RLock()
+		shard := pool.getShard(msg.Id)
+		shard.RLock()
 
 		switch msg.Type {
 		case 1, 3:
-			for _, client := range pool.Clients[msg.Id] {
+			for _, client := range shard.Clients[msg.Id] {
 				fmt.Println("Sending message to all students in Pool")
 				if client.Details.Role == "Student" {
 					if err := wsutil.WriteServerText(client.Conn, payloadData); err != nil {
@@ -209,7 +235,7 @@ func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 			}
 
 		case 4:
-			if client, ok := pool.Clients[msg.Id][msg.To]; ok {
+			if client, ok := shard.Clients[msg.Id][msg.To]; ok {
 				fmt.Println("Sending message to specific client in Pool")
 				if err := wsutil.WriteServerText(client.Conn, payloadData); err != nil {
 					log.Println(err)
@@ -221,7 +247,7 @@ func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 			var body JoinLeaveBody
 			json.Unmarshal(msg.Body, &body)
 			joiningUserId := body.User
-			for userId, client := range pool.Clients[msg.Id] {
+			for userId, client := range shard.Clients[msg.Id] {
 				if userId != joiningUserId {
 					if err := wsutil.WriteServerText(client.Conn, payloadData); err != nil {
 						log.Println(err)
@@ -231,7 +257,7 @@ func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 			}
 		}
 
-		pool.mu.RUnlock()
+		shard.RUnlock()
 
 	}
 }
