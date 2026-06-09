@@ -15,24 +15,37 @@ import (
 	"github.com/mailru/easygo/netpoll"
 )
 
-// var Conns = make(map[*websocket.Conn]bool)
-
 const (
 	PubSubGeneralChannel        = "general"
 	HeartBeatInterval           = 10 * time.Second
 	ShardCount           uint32 = 32 // Number of shards to divide the map into
+
+	// WriteDeadline is the maximum time allowed for a single WebSocket write.
+	WriteDeadline = 100 * time.Millisecond
+
+	// shardWorkerBufSize is the per-shard task channel buffer.
+	shardWorkerBufSize = 256
 )
 
 var (
 	ctx            = context.Background()
 	poolInit       *Pool
 	ClientConnChan chan *Client
+
+	// shardWorkers is a fixed-size array of buffered channels — one per shard.
+	shardWorkers [ShardCount]chan shardTask
 )
 
 // PoolMapShard holds its own Mutex and Map to reduce lock contention
 type PoolMapShard struct {
 	sync.RWMutex
 	Clients map[string]map[int]*Client
+}
+
+// shardTask is the unit of work dispatched to a per-shard worker goroutine.
+type shardTask struct {
+	msg         Message
+	payloadData []byte
 }
 
 type Pool struct {
@@ -53,6 +66,10 @@ func (pool *Pool) getShard(id string) *PoolMapShard {
 }
 
 func init() {
+	for i := range shardWorkers {
+		shardWorkers[i] = make(chan shardTask, shardWorkerBufSize)
+	}
+
 	poolInit = &Pool{
 		Register:   make(chan *Client),
 		Unregister: make(chan *Client),
@@ -79,7 +96,14 @@ func (pool *Pool) Start(redis *redis.Client) {
 	ticker := time.NewTicker(HeartBeatInterval / time.Duration(ShardCount))
 	var currentShardIndex uint32 = 0
 
+	// Start one worker goroutine per shard. Each worker owns the write loop
+	// for its shard, so all 32 shards can flush WebSocket writes concurrently.
+	for i := uint32(0); i < ShardCount; i++ {
+		go pool.runShardWorker(i, shardWorkers[i])
+	}
+
 	go pool.listenPubSubChannel(redis)
+
 	poller, err := netpoll.New(nil)
 	if err != nil {
 		log.Println(err)
@@ -161,29 +185,8 @@ func (pool *Pool) Start(redis *redis.Client) {
 			pool.publishMessage(message, redis)
 
 		case <-ticker.C:
-			// Process clients incrementally to reduce memory pressure
-			// Process one shard per tick to perfectly spread the load over the HeartBeatInterval
-			shard := pool.Shards[currentShardIndex]
-			shard.RLock()
-			for _, clientsMap := range shard.Clients {
-				for _, client := range clientsMap {
-					// Check and update IsAlive status
-					if !client.IsAlive.Load() {
-						shard.RUnlock()
-						client.Pool.Unregister <- client
-						shard.RLock()
-						continue
-					}
-
-					client.IsAlive.Store(false)
-
-					if err := ws.WriteFrame(client.Conn, ws.NewPingFrame(nil)); err != nil {
-						log.Println(err)
-						continue
-					}
-				}
-			}
-			shard.RUnlock()
+			// Dispatch the ping work for this shard to a separate goroutine
+			go pool.pingShardClients(currentShardIndex)
 
 			// Move to the next shard for the next tick
 			currentShardIndex = (currentShardIndex + 1) % ShardCount
@@ -216,19 +219,73 @@ func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 
 		if err := json.Unmarshal(payloadData, &msg); err != nil {
 			log.Println(err)
-			return
+			continue
 		}
 
-		shard := pool.getShard(msg.Id)
+		shardIdx := getShardIndex(msg.Id)
+
+		// Non-blocking send: if the worker's buffer is full the message is
+		// dropped for that shard rather than stalling the listener goroutine
+		// and backing up every other shard.
+		select {
+		case shardWorkers[shardIdx] <- shardTask{msg: msg, payloadData: payloadData}:
+		default:
+			log.Printf("shard %d worker channel full, dropping message type %d for id %s", shardIdx, msg.Type, msg.Id)
+		}
+	}
+}
+
+// pingShardClients sends a WebSocket ping frame to every client in the given
+// shard and checks their IsAlive status.One goroutine is spawned per tick per shard 
+func (pool *Pool) pingShardClients(shardIndex uint32) {
+	shard := pool.Shards[shardIndex]
+	shard.RLock()
+
+	// Collect dead clients first so we don't call Unregister while holding.
+	var dead []*Client
+
+	for _, clientsMap := range shard.Clients {
+		for _, client := range clientsMap {
+			if !client.IsAlive.Load() {
+				dead = append(dead, client)
+				continue
+			}
+
+			client.IsAlive.Store(false)
+
+			client.Conn.SetWriteDeadline(time.Now().Add(WriteDeadline))
+			if err := ws.WriteFrame(client.Conn, ws.NewPingFrame(nil)); err != nil {
+				log.Println("ping error:", err)
+			}
+		}
+	}
+
+	shard.RUnlock()
+
+	// Enqueue dead clients for cleanup outside the read lock.
+	for _, client := range dead {
+		client.Pool.Unregister <- client
+	}
+}
+
+// runShardWorker is the dedicated write goroutine for a single shard.
+func (pool *Pool) runShardWorker(idx uint32, tasks <-chan shardTask) {
+	shard := pool.Shards[idx]
+
+	for task := range tasks {
+		msg := task.msg
+		payloadData := task.payloadData
+
 		shard.RLock()
 
 		switch msg.Type {
 		case 1, 3:
 			for _, client := range shard.Clients[msg.Id] {
-				fmt.Println("Sending message to all students in Pool")
 				if client.Details.Role == "Student" {
+					fmt.Println("Sending message to all students in Pool")
+					client.Conn.SetWriteDeadline(time.Now().Add(WriteDeadline))
 					if err := wsutil.WriteServerText(client.Conn, payloadData); err != nil {
-						log.Println(err)
+						log.Println("shard worker write error:", err)
 						continue
 					}
 				}
@@ -237,9 +294,9 @@ func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 		case 4:
 			if client, ok := shard.Clients[msg.Id][msg.To]; ok {
 				fmt.Println("Sending message to specific client in Pool")
+				client.Conn.SetWriteDeadline(time.Now().Add(WriteDeadline))
 				if err := wsutil.WriteServerText(client.Conn, payloadData); err != nil {
-					log.Println(err)
-					continue
+					log.Println("shard worker write error:", err)
 				}
 			}
 
@@ -249,8 +306,9 @@ func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 			joiningUserId := body.User
 			for userId, client := range shard.Clients[msg.Id] {
 				if userId != joiningUserId {
+					client.Conn.SetWriteDeadline(time.Now().Add(WriteDeadline))
 					if err := wsutil.WriteServerText(client.Conn, payloadData); err != nil {
-						log.Println(err)
+						log.Println("shard worker write error:", err)
 						continue
 					}
 				}
@@ -258,6 +316,5 @@ func (pool *Pool) listenPubSubChannel(redis *redis.Client) {
 		}
 
 		shard.RUnlock()
-
 	}
 }
