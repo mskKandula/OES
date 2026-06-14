@@ -17,10 +17,6 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main .
 #Define the running image
 FROM alpine:3.21
 
-
-# Update CA certificates first to fix SSL in corporate/proxy environments
-RUN apk add --no-cache ca-certificates && update-ca-certificates
-
 # Install ffmpeg
 RUN apk add --no-cache ffmpeg
 
