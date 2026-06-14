@@ -150,6 +150,14 @@ const routes = [
           title: "QuestionGen",
         },
       },
+      {
+        path: "/studentQnA",
+        name: "StudentQnA",
+        component: loadView("StudentQnA"),
+        meta: {
+          title: "StudentQnA",
+        },
+      },
     ],
   },
 ];
