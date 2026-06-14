@@ -1,33 +1,34 @@
-# Stage 1 as builder
-FROM python:3.14-alpine AS builder
+# Stage 1 — builder
+FROM python:3.11-slim AS builder
 
-# Install necessary build dependencies and libraries
-RUN apk add --no-cache \
-    build-base \
+# Install build dependencies needed by chromadb / sentence-transformers
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
     gcc \
     g++ \
-    libstdc++ \
-    libatomic \
-    linux-headers
+    cmake \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
 WORKDIR /app/OES/IntelligenceSupport
 
-# Install app dependencies
+# Install Python dependencies into a target directory for clean copy
 COPY ./IntelligenceSupport/questgen/requirements.txt .
-
 RUN pip install --no-cache-dir --target=/app/OES/IntelligenceSupport/dependencies -r requirements.txt
 
-# Copy code files
+# Copy application source
 COPY ./IntelligenceSupport/questgen/ .
 
-# Stage 2
-FROM python:3.14-alpine
+# Stage 2 — runtime
+FROM python:3.11-slim
 
-# Install runtime dependencies
-RUN apk add --no-cache libstdc++ libatomic
+# Install only runtime shared libraries
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libstdc++6 \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
-# Create app directory
 WORKDIR /app/OES/IntelligenceSupport
 
 COPY --from=builder /app/OES/IntelligenceSupport/ .
