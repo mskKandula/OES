@@ -74,7 +74,7 @@ func main() {
 	// ── Video encoding queue (existing) ─────────────────────────────────────
 	encodeQ, err := ch.QueueDeclare(
 		"encode", // name
-		false,    // durable
+		true,    // durable
 		false,    // delete when unused
 		false,    // exclusive
 		false,    // no-wait
