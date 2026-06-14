@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/mskKandula/oes/api/model"
 )
 
 type ProofData struct {
@@ -178,4 +179,24 @@ func (h *Handler) UploadExamProof(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"fileUploaded": "Success"})
+}
+
+// AskQuestion handles student Q&A requests against indexed course material via the RAG pipeline.
+// POST /api/r/askQuestion
+// Body: { "question": "...", "contextId": "optional-topic" }
+func (h *Handler) AskQuestion(c *gin.Context) {
+	req := model.AskQuestionRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx := c.Request.Context()
+	answer, err := h.UserService.AskQuestion(ctx, req.Question, req.ContextId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"answer": answer})
 }
