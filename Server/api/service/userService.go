@@ -69,6 +69,18 @@ func (us *userService) GenQuestion(ctx context.Context, requestData string) (str
 	return r.GetResponse(), nil
 }
 
+func (us *userService) AskQuestion(ctx context.Context, question, contextId string) (string, error) {
+	r, err := us.QuestgenClient.AskQuestion(ctx, &pb.AskQuestionRequest{
+		Question:  question,
+		ContextId: contextId,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return r.GetAnswer(), nil
+}
+
 func (us *userService) CreateExam(ctx context.Context, clientId, examName, examType string) (int64, error) {
 	examId, err := us.UserRepository.ExamCreation(ctx, clientId, examName, examType)
 	if err != nil {
