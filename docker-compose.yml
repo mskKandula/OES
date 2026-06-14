@@ -131,6 +131,19 @@ services:
       RABBITMQ_DEFAULT_PASS: "rabbitmq"
       RABBITMQ_DEFAULT_VHOST: "/"
 
+  ollama:
+    image: ollama/ollama
+    container_name: "oes_ollama"
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    networks:
+      - default
+    restart: always
+    # Pull llama3.2:3b on first startup (CPU-only, no GPU flags)
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull llama3.2:3b && wait"]
+
   isupport:
     container_name: "oes_isupport"
     ports:
@@ -141,6 +154,27 @@ services:
     networks:
       - default
     restart: always
+    depends_on:
+      - ollama
+      - vectordb
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - CHROMA_HOST=vectordb
+      - CHROMA_PORT=8000
+
+  vectordb:
+    image: chromadb/chroma:latest
+    container_name: "oes_vectordb"
+    ports:
+      - "8000:8000"
+    volumes:
+      - chroma_data:/chroma/chroma
+    networks:
+      - default
+    restart: always
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ALLOW_RESET=FALSE
 
   liveserver:
     container_name: "oes_liveserver"
@@ -161,4 +195,6 @@ networks:
 volumes:
   mysql_data:
   cache_data:
+  ollama_data:
+  chroma_data:
 # docker-compose up --build
