@@ -1,0 +1,413 @@
+# =============================================================================
+# OES — NetworkPolicies (Zero-Trust intra-namespace traffic)
+#
+# Strategy: default-deny all ingress and egress within the oes namespace,
+# then explicitly allow only the communication paths that exist in the app.
+#
+# Communication matrix (from systemPatterns.md):
+#   ingress → client (port 80)               [from Ingress controller]
+#   client → server (port 9000)              [API + WebSocket]
+#   client → fileserver (port 8887)          [CDN media]
+#   server → db (port 3306)                  [MySQL]
+#   server → cache (port 6379)               [Redis]
+#   server → messageq (port 5672)            [RabbitMQ publish]
+#   server → isupport (port 50051)           [gRPC]
+#   mqserver → messageq (port 5672)          [RabbitMQ consume]
+#   mqserver → media volume (filesystem)     [not a network path]
+#   fileserver → media volume (filesystem)   [not a network path]
+#   All pods → kube-dns (port 53 UDP/TCP)    [DNS resolution]
+# =============================================================================
+
+# ── 1. Default deny all ingress + egress for entire namespace ─────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector: {}  # applies to ALL pods in the namespace
+  policyTypes:
+    - Ingress
+    - Egress
+
+---
+# ── 2. Allow all pods to reach kube-dns (DNS resolution) ─────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-dns-egress
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Egress
+  egress:
+    - ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+---
+# ── 3. oes-client: allow ingress from Ingress controller ─────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-client
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-client
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx  # ingress-nginx namespace
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 80
+
+---
+# ── 4. oes-client: allow egress to server and fileserver ─────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-client-egress
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-client
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-server
+      ports:
+        - protocol: TCP
+          port: 9000
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-fileserver
+      ports:
+        - protocol: TCP
+          port: 8887
+
+---
+# ── 5. oes-server: allow ingress from client ─────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-server
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-client
+      ports:
+        - protocol: TCP
+          port: 9000
+
+---
+# ── 6. oes-server: allow egress to db, cache, messageq, isupport ─────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-server-egress
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-server
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-db
+      ports:
+        - protocol: TCP
+          port: 3306
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-cache
+      ports:
+        - protocol: TCP
+          port: 6379
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-messageq
+      ports:
+        - protocol: TCP
+          port: 5672
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-isupport
+      ports:
+        - protocol: TCP
+          port: 50051
+
+---
+# ── 7. oes-fileserver: allow ingress from client ─────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-fileserver
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-fileserver
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-client
+      ports:
+        - protocol: TCP
+          port: 8887
+
+---
+# ── 8. oes-db: allow ingress from server only ────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-db
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-db
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-server
+      ports:
+        - protocol: TCP
+          port: 3306
+
+---
+# ── 9. oes-cache: allow ingress from server ──────────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-cache
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-cache
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-server
+      ports:
+        - protocol: TCP
+          port: 6379
+
+---
+# ── 10. oes-messageq: allow ingress from server and mqserver ─────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-messageq
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-messageq
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-server
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-mqserver
+      ports:
+        - protocol: TCP
+          port: 5672
+
+---
+# ── 11. oes-mqserver: allow egress to messageq only ──────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-mqserver-egress
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-mqserver
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-messageq
+      ports:
+        - protocol: TCP
+          port: 5672
+    # Allow SMTP egress for email sending (Gmail SMTP port 587)
+    - ports:
+        - protocol: TCP
+          port: 587
+
+---
+# ── 12. oes-isupport: allow ingress from server ──────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-isupport
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-isupport
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-server
+      ports:
+        - protocol: TCP
+          port: 50051
+
+---
+# ── 13. oes-isupport: allow egress to ollama (11434) and vectordb (8000) ─────
+# The RAG pipeline requires isupport to call:
+#   - oes-ollama:11434  (LLM inference + embeddings via langchain_ollama)
+#   - oes-vectordb:8000 (ChromaDB vector store via chromadb.HttpClient)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-isupport-egress
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-isupport
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-ollama
+      ports:
+        - protocol: TCP
+          port: 11434
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-vectordb
+      ports:
+        - protocol: TCP
+          port: 8000
+
+---
+# ── 14. oes-ollama: allow ingress from isupport ───────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-ollama
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-ollama
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-isupport
+      ports:
+        - protocol: TCP
+          port: 11434
+
+---
+# ── 15. oes-vectordb: allow ingress from isupport ─────────────────────────────
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-vectordb
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-vectordb
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-isupport
+      ports:
+        - protocol: TCP
+          port: 8000
