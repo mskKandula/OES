@@ -1,0 +1,94 @@
+# =============================================================================
+# Local deployment patch for docker-desktop development.
+# Overrides image names and imagePullPolicy to use locally built images.
+# Apply with: kubectl apply -k k8s/ (after kustomization.yaml references this)
+# =============================================================================
+
+# ── oes-server ────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-server
+  namespace: oes
+spec:
+  template:
+    spec:
+      containers:
+        - name: oes-server
+          image: oes-server:local
+          imagePullPolicy: Never
+
+---
+# ── oes-client ────────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-client
+  namespace: oes
+spec:
+  template:
+    spec:
+      containers:
+        - name: oes-client
+          image: oes-client:local
+          imagePullPolicy: Never
+
+---
+# ── oes-fileserver ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-fileserver
+  namespace: oes
+spec:
+  template:
+    spec:
+      containers:
+        - name: oes-fileserver
+          image: oes-fileserver:local
+          imagePullPolicy: Never
+
+---
+# ── oes-mqserver ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-mqserver
+  namespace: oes
+spec:
+  template:
+    spec:
+      containers:
+        - name: oes-mqserver
+          image: oes-mqserver:local
+          imagePullPolicy: Never
+
+---
+# ── oes-isupport ─────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-isupport
+  namespace: oes
+spec:
+  template:
+    spec:
+      containers:
+        - name: oes-isupport
+          image: oes-isupport:local
+          imagePullPolicy: Never
+
+---
+# ── oes-liveserver ────────────────────────────────────────────────────────────
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-liveserver
+  namespace: oes
+spec:
+  template:
+    spec:
+      containers:
+        - name: oes-liveserver
+          image: oes-liveserver:local
+          imagePullPolicy: Never
