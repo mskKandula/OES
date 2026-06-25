@@ -141,8 +141,8 @@ services:
     networks:
       - default
     restart: always
-    # Pull llama3.2:3b on first startup (CPU-only, no GPU flags)
-    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 5 && ollama pull llama3.2:3b && wait"]
+    # Pull llama3.2:3b (LLM) and nomic-embed-text (embeddings) on first startup
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 10 && ollama pull llama3.2:3b && ollama pull nomic-embed-text && wait"]
 
   isupport:
     container_name: "oes_isupport"
@@ -161,6 +161,8 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - CHROMA_HOST=vectordb
       - CHROMA_PORT=8000
+      - LLM_MODEL=llama3.2:3b
+      - EMBED_MODEL=nomic-embed-text
 
   vectordb:
     image: chromadb/chroma:latest
