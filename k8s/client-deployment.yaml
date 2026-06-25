@@ -1,0 +1,325 @@
+# =============================================================================
+# OES — Nginx SPA Client Deployment + ClusterIP Service + HPA
+#
+# Design decisions:
+#   - The Nginx SPA serves as both the static file server for the Vue.js bundle
+#     AND the reverse proxy for /api, /cdn, and /r/ws paths — exactly mirroring
+#     the Docker Compose setup.
+#   - In Kubernetes the upstream service names change:
+#       server   → oes-server:9000
+#       fileserver → oes-fileserver:8887
+#     These are injected via a ConfigMap that overrides /etc/nginx/nginx.conf.
+#   - The built static assets are baked into the image at build time (dist/).
+#   - The Nginx ConfigMap replaces the Docker Compose Client/nginx.conf with
+#     Kubernetes-native upstream names and adds upstream keepalive blocks for
+#     connection reuse — critical for WebSocket proxying at scale.
+#   - HPA scales on CPU (60%) between 2–8 replicas. Nginx is very lightweight
+#     per replica; scaling absorbs burst traffic from simultaneous exam sessions.
+#   - PDB guarantees at least 1 replica during node maintenance.
+#   - WebSocket upgrade headers (Connection/Upgrade) forwarded explicitly.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oes-nginx-config
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-client
+    app.kubernetes.io/part-of: oes-platform
+data:
+  nginx.conf: |
+    worker_processes auto;
+    pid /tmp/nginx.pid;
+    worker_rlimit_nofile 500000;
+
+    events {
+        worker_connections 65535;
+        multi_accept on;
+        use epoll;
+    }
+
+    http {
+        proxy_read_timeout 300;
+        proxy_connect_timeout 300;
+        proxy_send_timeout 300;
+
+        # Upstream keepalive for connection reuse
+        upstream oes_server {
+            server oes-server:9000;
+            keepalive 32;
+        }
+
+        upstream oes_fileserver {
+            server oes-fileserver:8887;
+            keepalive 16;
+        }
+
+        gzip on;
+        gzip_comp_level 6;
+        gzip_min_length 1000;
+        gzip_types text/plain text/css application/json application/javascript
+                   application/x-javascript text/javascript text/xml
+                   application/xml application/wasm;
+
+        include /etc/nginx/mime.types;
+
+        server {
+            listen 80;
+
+            client_max_body_size 1M;
+
+            # ── Large upload routes ───────────────────────────────────────
+            location /api/r/uploadVideoContent {
+                client_max_body_size 15M;
+                proxy_pass http://oes_server;
+                proxy_http_version 1.1;
+                proxy_set_header Connection "";
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+
+            location /api/r/uploadExamProof {
+                client_max_body_size 50M;
+                proxy_pass http://oes_server;
+                proxy_http_version 1.1;
+                proxy_set_header Connection "";
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+
+            location /api/r/multipleStudentsRegistration {
+                client_max_body_size 100K;
+                proxy_pass http://oes_server;
+                proxy_http_version 1.1;
+                proxy_set_header Connection "";
+            }
+
+            # ── WebSocket endpoint ────────────────────────────────────────
+            location /r/ws {
+                proxy_pass http://oes_server;
+                proxy_http_version 1.1;
+                proxy_set_header Upgrade $http_upgrade;
+                proxy_set_header Connection "Upgrade";
+                proxy_set_header Host $host;
+                proxy_read_timeout 86400s;  # keep WS alive for 24h
+            }
+
+            # ── General API proxy ─────────────────────────────────────────
+            location /api {
+                rewrite ^/api(.*)$ $1 break;
+                proxy_pass http://oes_server;
+                proxy_http_version 1.1;
+                proxy_set_header Connection "";
+                proxy_set_header Host $host;
+                proxy_set_header X-Real-IP $remote_addr;
+                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            }
+
+            # ── CDN / file server proxy ───────────────────────────────────
+            location /cdn {
+                rewrite ^/cdn(.*)$ $1 break;
+                proxy_pass http://oes_fileserver;
+                proxy_http_version 1.1;
+                proxy_set_header Connection "";
+                # Cache static assets aggressively in the browser
+                add_header Cache-Control "public, max-age=3600";
+            }
+
+            # ── Vue SPA static files ──────────────────────────────────────
+            location / {
+                index index.html;
+                root /usr/share/nginx/html;
+                try_files $uri $uri/ $uri.html =404;
+            }
+        }
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-client
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-client
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  replicas: 2
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-client
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 2
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oes-client
+        app.kubernetes.io/component: frontend
+        app.kubernetes.io/part-of: oes-platform
+    spec:
+      terminationGracePeriodSeconds: 15
+
+      securityContext:
+        runAsNonRoot: false  # Nginx master process binds port 80 as root,
+        runAsUser: 0         # workers drop to nginx user internally.
+
+      containers:
+        - name: oes-client
+          # Replace with your registry image for production.
+          # For local docker-desktop: load with ctr -n k8s.io images import
+          image: mskkandula/oes:client
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+
+          volumeMounts:
+            - name: nginx-config
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+              readOnly: true
+            # Nginx needs a writable tmp dir when run with restricted FS
+            - name: nginx-tmp
+              mountPath: /tmp
+            - name: nginx-cache
+              mountPath: /var/cache/nginx
+            - name: nginx-run
+              mountPath: /var/run
+
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+
+      volumes:
+        - name: nginx-config
+          configMap:
+            name: oes-nginx-config
+        - name: nginx-tmp
+          emptyDir: {}
+        - name: nginx-cache
+          emptyDir: {}
+        - name: nginx-run
+          emptyDir: {}
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-client
+
+---
+# =============================================================================
+# Client ClusterIP Service (fronted by the Ingress)
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: oes-client
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-client
+    app.kubernetes.io/component: frontend
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: oes-client
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+
+---
+# =============================================================================
+# HPA — scale on CPU utilisation
+# =============================================================================
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: oes-client-hpa
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-client
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: oes-client
+  minReplicas: 2
+  maxReplicas: 8
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 60
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+        - type: Pods
+          value: 2
+          periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 180
+      policies:
+        - type: Pods
+          value: 1
+          periodSeconds: 60
+
+---
+# =============================================================================
+# PodDisruptionBudget
+# =============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oes-client-pdb
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-client
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-client
