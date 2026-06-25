@@ -1,0 +1,157 @@
+# =============================================================================
+# OES — Ollama LLM Server Deployment + Service + PVC
+#
+# Design decisions:
+#   - Ollama serves both the LLM (llama3.2:3b) and embedding model
+#     (nomic-embed-text) via HTTP on port 11434.
+#   - isupport (Python gRPC) connects to Ollama via OLLAMA_BASE_URL env var.
+#   - Single replica — Ollama maintains model-weights in memory; running
+#     multiple replicas requires a shared model-store which is not yet wired.
+#   - strategy: Recreate — avoids two instances fighting over the model PVC.
+#   - PVC for /root/.ollama stores downloaded model weights persistently
+#     so models are not re-downloaded on pod restart.
+#   - Liveness: TCP on 11434. Readiness: HTTP GET /api/tags (Ollama's health
+#     endpoint that returns the list of pulled models).
+#   - Resource limits: GPU not required for llama3.2:3b on CPU (slow but
+#     functional for dev/POC). Increase memory for larger models.
+#   - initContainer pulls the required models on first boot so the service
+#     is ready before isupport tries to connect.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-ollama
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-ollama
+    app.kubernetes.io/component: llm-server
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-ollama
+  strategy:
+    type: Recreate  # Only one instance should own the model PVC
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oes-ollama
+        app.kubernetes.io/component: llm-server
+        app.kubernetes.io/part-of: oes-platform
+    spec:
+      terminationGracePeriodSeconds: 60
+
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+
+      # ── Pull models on first boot ─────────────────────────────────────────────
+      initContainers:
+        - name: pull-models
+          image: ollama/ollama:latest
+          command:
+            - sh
+            - -c
+            - |
+              # Start ollama in background
+              ollama serve &
+              OLLAMA_PID=$!
+              # Wait until the API is responsive
+              until curl -sf http://localhost:11434/api/tags > /dev/null 2>&1; do
+                echo "Waiting for Ollama to start..."; sleep 3;
+              done
+              echo "Ollama started. Pulling models..."
+              ollama pull llama3.2:3b
+              ollama pull nomic-embed-text
+              echo "Models pulled successfully."
+              kill $OLLAMA_PID
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /root/.ollama
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "4000m"
+              memory: "8Gi"
+
+      containers:
+        - name: oes-ollama
+          image: ollama/ollama:latest
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 11434
+              protocol: TCP
+
+          volumeMounts:
+            - name: ollama-data
+              mountPath: /root/.ollama
+
+          livenessProbe:
+            tcpSocket:
+              port: 11434
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+          readinessProbe:
+            httpGet:
+              path: /api/tags
+              port: 11434
+            initialDelaySeconds: 20
+            periodSeconds: 15
+            timeoutSeconds: 10
+            failureThreshold: 5
+
+          startupProbe:
+            tcpSocket:
+              port: 11434
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 60  # up to 10 min for model loading on cold start
+
+          # CPU-only inference — llama3.2:3b requires ~4-6GB RAM on CPU
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "4Gi"
+            limits:
+              cpu: "4000m"
+              memory: "8Gi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+
+      volumes:
+        - name: ollama-data
+          persistentVolumeClaim:
+            claimName: oes-ollama-data
+
+---
+# =============================================================================
+# Ollama ClusterIP Service (internal — only isupport needs to reach it)
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: oes-ollama
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-ollama
+    app.kubernetes.io/component: llm-server
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: oes-ollama
+  ports:
+    - name: http
+      port: 11434
+      targetPort: 11434
+      protocol: TCP

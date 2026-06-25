@@ -60,8 +60,12 @@ func (us *userService) CreateVideoFile(ctx context.Context, fileName, url, image
 	return nil
 }
 
-func (us *userService) GenQuestion(ctx context.Context, requestData string) (string, error) {
-	r, err := us.QuestgenClient.QuestGen(ctx, &pb.QuestGenRequest{Request: requestData})
+func (us *userService) GenQuestion(ctx context.Context, requestData, clientId, contextId string) (string, error) {
+	r, err := us.QuestgenClient.QuestGen(ctx, &pb.QuestGenRequest{
+		Request:   requestData,
+		ClientId:  clientId,
+		ContextId: contextId,
+	})
 	if err != nil {
 		return "", err
 	}
@@ -69,10 +73,11 @@ func (us *userService) GenQuestion(ctx context.Context, requestData string) (str
 	return r.GetResponse(), nil
 }
 
-func (us *userService) AskQuestion(ctx context.Context, question, contextId string) (string, error) {
+func (us *userService) AskQuestion(ctx context.Context, question, contextId, clientId string) (string, error) {
 	r, err := us.QuestgenClient.AskQuestion(ctx, &pb.AskQuestionRequest{
 		Question:  question,
 		ContextId: contextId,
+		ClientId:  clientId,
 	})
 	if err != nil {
 		return "", err

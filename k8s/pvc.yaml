@@ -1,0 +1,167 @@
+# =============================================================================
+# OES — PersistentVolumeClaims
+#
+# Storage class annotations:
+#   - Use your cloud provider's default StorageClass (e.g. gp3 on AWS EKS,
+#     premium-rwo on GKE, managed-premium on AKS).
+#   - For local/on-prem clusters replace storageClassName with your local-path
+#     or NFS provisioner class name.
+#
+# ── ReadWriteMany (RWX) Note ──────────────────────────────────────────────────
+#   oes-media and oes-livedata are shared by multiple pods:
+#     oes-media:    oes-server (RW) + oes-fileserver (RO) + oes-mqserver (RW)
+#     oes-livedata: oes-liveserver (RW) + oes-fileserver (RO)
+#
+#   For production on cloud use a StorageClass that supports ReadWriteMany:
+#     AWS:    EFS CSI driver  (efs.csi.aws.com)
+#     GKE:    Filestore CSI   (filestore.csi.storage.gke.io)
+#     AKS:    Azure Files     (file.csi.azure.com)
+#     On-prem: NFS or CephFS provisioner
+#
+#   For LOCAL Docker Desktop (single-node):
+#     Docker Desktop uses a single-node cluster — all pods schedule on the
+#     same node, so ReadWriteOnce works in practice even for multi-pod mounts.
+#     storageClassName "hostpath" is the Docker Desktop default provisioner.
+#     Switch to ReadWriteMany + a proper StorageClass for multi-node clusters.
+# =============================================================================
+
+# ── MySQL data ────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oes-mysql-data
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-db
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hostpath  # Docker Desktop local provisioner
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+# ── Redis data ────────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oes-redis-data
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-cache
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 2Gi
+
+---
+# ── RabbitMQ data ─────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oes-rabbitmq-data
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-messageq
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# ── Shared media volume ────────────────────────────────────────────────────────
+# Shared by: oes-server (RW), oes-fileserver (RO), oes-mqserver (RW)
+#
+# LOCAL Docker Desktop: ReadWriteOnce works because all pods run on one node.
+# PRODUCTION (multi-node): change accessModes to ReadWriteMany and use an
+#   NFS/EFS/CephFS StorageClass.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oes-media
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-media
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  accessModes:
+    - ReadWriteOnce   # LOCAL: single-node Docker Desktop
+    # - ReadWriteMany # PRODUCTION: enable with NFS/EFS/CephFS StorageClass
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# ── Live stream HLS output ────────────────────────────────────────────────────
+# Written by oes-liveserver (nginx-rtmp); read by oes-fileserver via /cdn/*
+#
+# LOCAL Docker Desktop: ReadWriteOnce works (single node).
+# PRODUCTION (multi-node): change accessModes to ReadWriteMany.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oes-livedata
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-liveserver
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  accessModes:
+    - ReadWriteOnce   # LOCAL: single-node Docker Desktop
+    # - ReadWriteMany # PRODUCTION: enable with NFS/EFS/CephFS StorageClass
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 5Gi
+
+---
+# ── Ollama model weights ───────────────────────────────────────────────────────
+# Stores downloaded LLM and embedding model weights for oes-ollama.
+# Prevents re-downloading models on every pod restart (llama3.2:3b ~2GB,
+# nomic-embed-text ~274MB).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oes-ollama-data
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-ollama
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 10Gi  # llama3.2:3b ~2GB + nomic-embed-text ~274MB + headroom
+
+---
+# ── ChromaDB vector store data ────────────────────────────────────────────────
+# Stores the persistent vector embeddings for the RAG pipeline.
+# One ChromaDB collection per examiner tenant: oes_knowledge_{client_id}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: oes-chroma-data
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-vectordb
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: hostpath
+  resources:
+    requests:
+      storage: 5Gi

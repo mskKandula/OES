@@ -1,0 +1,207 @@
+# =============================================================================
+# OES — Intelligence Support (Python gRPC RAG) Deployment + ClusterIP Service
+#
+# Design decisions:
+#   - Full RAG pipeline: Ollama (LLM + embeddings) + ChromaDB (vector store).
+#   - Two gRPC RPCs exposed:
+#       1. QuestGen  — Examiner uploads text → chunks upserted to ChromaDB →
+#                      LLM generates 5 exam questions.
+#       2. AskQuestion — Student asks a question → ChromaDB retrieves relevant
+#                        course material → LLM answers from context.
+#   - Stateless service; scales horizontally (each replica connects to the
+#     shared Ollama and ChromaDB services).
+#   - gRPC uses HTTP/2; Service port named "grpc" for Istio/Envoy detection.
+#   - No auth on gRPC (WithInsecure on client) — acceptable inside private
+#     cluster network. Add mTLS via Istio or cert-manager when hardening.
+#   - runAsUser matches the non-root oesuser created in the Dockerfile
+#     (useradd -r assigns a system UID; 999 is the conventional value).
+#   - initContainers wait for both Ollama and ChromaDB before starting so
+#     the first gRPC call doesn't fail immediately on startup.
+#   - Resources: stub/CPU-only. When GPU inference is added, adjust limits
+#     and add GPU nodeSelector/tolerations.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-isupport
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-isupport
+    app.kubernetes.io/component: intelligence-support
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-isupport
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oes-isupport
+        app.kubernetes.io/component: intelligence-support
+        app.kubernetes.io/part-of: oes-platform
+    spec:
+      terminationGracePeriodSeconds: 30
+
+      # Match the non-root oesuser created in the Dockerfile (useradd -r)
+      # System users created with useradd -r start at UID 999 on Debian/slim.
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        runAsGroup: 999
+        fsGroup: 999
+
+      # ── Wait for dependencies before the RAG service starts ──────────────────
+      initContainers:
+        - name: wait-for-ollama
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z oes-ollama 11434; do
+                echo "Waiting for Ollama (oes-ollama:11434)..."; sleep 5;
+              done
+              echo "Ollama is up."
+
+        - name: wait-for-vectordb
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z oes-vectordb 8000; do
+                echo "Waiting for ChromaDB (oes-vectordb:8000)..."; sleep 5;
+              done
+              echo "ChromaDB is up."
+
+      containers:
+        - name: oes-isupport
+          image: mskkandula/oes:isupport
+          imagePullPolicy: Always
+
+          ports:
+            - name: grpc
+              containerPort: 50051
+              protocol: TCP
+
+          env:
+            # ── Python runtime ─────────────────────────────────────────────────
+            - name: PYTHONPATH
+              value: "/app/OES/IntelligenceSupport/dependencies"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+
+            # ── Ollama LLM server ──────────────────────────────────────────────
+            # Points to the oes-ollama ClusterIP Service (port 11434).
+            - name: OLLAMA_BASE_URL
+              value: "http://oes-ollama:11434"
+
+            # ── ChromaDB vector store ──────────────────────────────────────────
+            # Points to the oes-vectordb ClusterIP Service (port 8000).
+            - name: CHROMA_HOST
+              value: "oes-vectordb"
+            - name: CHROMA_PORT
+              value: "8000"
+
+            # ── Model selection ────────────────────────────────────────────────
+            # Must match the models pulled by oes-ollama initContainer.
+            - name: LLM_MODEL
+              value: "llama3.2:3b"
+            - name: EMBED_MODEL
+              value: "nomic-embed-text"
+
+          livenessProbe:
+            tcpSocket:
+              port: 50051
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            tcpSocket:
+              port: 50051
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          startupProbe:
+            tcpSocket:
+              port: 50051
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30  # up to 2.5 min for model connection on cold start
+
+          # RAG service is CPU-bound when Ollama is on a separate pod.
+          # Adjust limits when real GPU inference is wired in.
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # Python needs tmp writes
+            capabilities:
+              drop:
+                - ALL
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-isupport
+
+---
+# =============================================================================
+# Intelligence Support ClusterIP Service (gRPC / HTTP2)
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: oes-isupport
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-isupport
+    app.kubernetes.io/component: intelligence-support
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: oes-isupport
+  ports:
+    - name: grpc
+      port: 50051
+      targetPort: 50051
+      protocol: TCP
+
+---
+# =============================================================================
+# PodDisruptionBudget
+# =============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oes-isupport-pdb
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-isupport
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-isupport

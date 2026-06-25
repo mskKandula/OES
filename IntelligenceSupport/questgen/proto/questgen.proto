@@ -8,7 +8,9 @@ option go_package = "./pkg/questgen/pb";
 // ── Shared messages ──────────────────────────────────────────────────────────
 
 message QuestGenRequest {
-    string request = 1;
+    string request    = 1;
+    string client_id  = 2; // Tenant identifier — determines which ChromaDB collection to use
+    string context_id = 3; // Optional: topic/subject tag stored as metadata (e.g. "biology")
 }
 
 message QuestGenResponse {
@@ -18,8 +20,9 @@ message QuestGenResponse {
 // ── Student Q&A messages ─────────────────────────────────────────────────────
 
 message AskQuestionRequest {
-    string question    = 1; // The student's question
-    string context_id  = 2; // Optional: topic/subject scope for retrieval (e.g. "biology")
+    string question   = 1; // The student's question
+    string context_id = 2; // Optional: topic/subject scope for retrieval (e.g. "biology")
+    string client_id  = 3; // Tenant identifier — determines which ChromaDB collection to query
 }
 
 message AskQuestionResponse {

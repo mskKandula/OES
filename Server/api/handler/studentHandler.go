@@ -191,8 +191,9 @@ func (h *Handler) AskQuestion(c *gin.Context) {
 		return
 	}
 
+	clientId := c.GetString("clientId")
 	ctx := c.Request.Context()
-	answer, err := h.UserService.AskQuestion(ctx, req.Question, req.ContextId)
+	answer, err := h.UserService.AskQuestion(ctx, req.Question, req.ContextId, clientId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

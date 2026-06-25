@@ -1,0 +1,67 @@
+# =============================================================================
+# OES — ConfigMap
+# Non-sensitive runtime configuration consumed by all services.
+# Sensitive values (passwords, keys) live in secret.yaml.
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oes-config
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes
+    app.kubernetes.io/part-of: oes-platform
+data:
+  # ── MySQL ──────────────────────────────────────────────────────────────────
+  MYSQL_DATABASE: "OES"
+  MYSQL_HOST: "oes-db"
+  MYSQL_PORT: "3306"
+
+  # ── Redis ──────────────────────────────────────────────────────────────────
+  REDIS_HOST: "oes-cache"
+  REDIS_PORT: "6379"
+
+  # ── RabbitMQ ───────────────────────────────────────────────────────────────
+  RABBITMQ_HOST: "oes-messageq"
+  RABBITMQ_PORT: "5672"
+  RABBITMQ_DEFAULT_VHOST: "/"
+  RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
+
+  # ── gRPC (Intelligence Support) ────────────────────────────────────────────
+  GRPC_HOST: "oes-isupport"
+  GRPC_PORT: "50051"
+
+  # ── Server config.json — rendered inline so the Go server can read it ──────
+  # The server reads config.json at startup via api/config/config.go
+  config.json: |
+    {
+      "database": {
+        "MySqlDSN":    "root:$(MYSQL_ROOT_PASSWORD)@tcp(oes-db:3306)/OES",
+        "RedisDSN":    "redis://oes-cache:6379/0",
+        "RabbitMQDSN": "amqp://rabbitmq:$(RABBITMQ_PASSWORD)@oes-messageq/",
+        "GRPCDSN":     "oes-isupport:50051"
+      }
+    }
+
+---
+# =============================================================================
+# Server config.json as a dedicated ConfigMap so it can be mounted as a file
+# =============================================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oes-server-config
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-server
+    app.kubernetes.io/part-of: oes-platform
+data:
+  config.json: |
+    {
+      "database": {
+        "MySqlDSN":    "root:root@tcp(oes-db:3306)/OES",
+        "RedisDSN":    "redis://oes-cache:6379/0",
+        "RabbitMQDSN": "amqp://rabbitmq:rabbitmq@oes-messageq/",
+        "GRPCDSN":     "oes-isupport:50051"
+      }
+    }

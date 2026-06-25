@@ -1,0 +1,144 @@
+# =============================================================================
+# OES — FileServer Deployment + ClusterIP Service
+#
+# Design decisions:
+#   - Stateless Go http.FileServer; scales horizontally behind the service.
+#   - Shares the oes-media RWX PVC with oes-server and oes-mqserver.
+#   - No auth on the fileserver itself — access is gated by the Nginx ingress
+#     (only /cdn/* path rewrite reaches this service).
+#   - Read-only root filesystem — the fileserver only reads, never writes.
+#   - Resource footprint is intentionally small (pure static file serving).
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-fileserver
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-fileserver
+    app.kubernetes.io/component: file-server
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-fileserver
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oes-fileserver
+        app.kubernetes.io/component: file-server
+        app.kubernetes.io/part-of: oes-platform
+    spec:
+      terminationGracePeriodSeconds: 15
+
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0
+
+      containers:
+        - name: oes-fileserver
+          # Replace with your registry image for production.
+          # For local docker-desktop: load with ctr -n k8s.io images import
+          image: mskkandula/oes:fileserver
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 8887
+              protocol: TCP
+
+          volumeMounts:
+            - name: media
+              mountPath: /app/OES/media
+              readOnly: true  # FileServer only reads
+
+          livenessProbe:
+            tcpSocket:
+              port: 8887
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            failureThreshold: 3
+
+          readinessProbe:
+            tcpSocket:
+              port: 8887
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "32Mi"
+            limits:
+              cpu: "200m"
+              memory: "128Mi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: oes-media
+            readOnly: true
+
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-fileserver
+
+---
+# =============================================================================
+# FileServer ClusterIP Service
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: oes-fileserver
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-fileserver
+    app.kubernetes.io/component: file-server
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: oes-fileserver
+  ports:
+    - name: http
+      port: 8887
+      targetPort: 8887
+      protocol: TCP
+
+---
+# =============================================================================
+# PodDisruptionBudget
+# =============================================================================
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oes-fileserver-pdb
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-fileserver
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-fileserver

@@ -1,0 +1,129 @@
+# =============================================================================
+# OES — Live Streaming Server (nginx-rtmp) Deployment + Services
+#
+# Design decisions:
+#   - Single replica: nginx-rtmp maintains RTMP session state in process memory
+#     and writes HLS fragments to a shared volume. Running two replicas would
+#     split incoming RTMP streams across instances, breaking HLS playlist
+#     continuity. Horizontal scaling requires an RTMP relay/edge topology.
+#   - strategy: Recreate — avoids two nginx-rtmp instances writing to /mnt/hls
+#     simultaneously during a rolling update.
+#   - Two Services:
+#       1. oes-liveserver-rtmp  (port 1935) — LoadBalancer for ingest from
+#          external publishers (OBS, browser RTMP). In restricted environments
+#          use NodePort or an external TCP LB annotation.
+#       2. oes-liveserver-hls   (no separate service needed — HLS output is
+#          served from the shared oes-livedata PVC via oes-fileserver /cdn/*).
+#   - HLS output volume (oes-livedata) mounted at /mnt/hls — same path as
+#     LiveStreamingServer/nginx.conf hls_path directive.
+#   - Liveness: TCP check on 1935. If the RTMP listener dies, restart the pod.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-liveserver
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-liveserver
+    app.kubernetes.io/component: live-streaming
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-liveserver
+  strategy:
+    type: Recreate  # Only one instance should own the HLS output volume
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oes-liveserver
+        app.kubernetes.io/component: live-streaming
+        app.kubernetes.io/part-of: oes-platform
+    spec:
+      terminationGracePeriodSeconds: 30
+
+      securityContext:
+        runAsNonRoot: false  # nginx-rtmp image runs as root by default
+        runAsUser: 0
+
+      containers:
+        - name: oes-liveserver
+          # Replace with your registry image for production.
+          # For local docker-desktop: load with ctr -n k8s.io images import
+          image: mskkandula/oes:liveserver
+          imagePullPolicy: Always
+
+          ports:
+            - name: rtmp
+              containerPort: 1935
+              protocol: TCP
+
+          volumeMounts:
+            - name: livedata
+              mountPath: /mnt/hls
+
+          livenessProbe:
+            tcpSocket:
+              port: 1935
+            initialDelaySeconds: 10
+            periodSeconds: 20
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            tcpSocket:
+              port: 1935
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "200m"
+              memory: "128Mi"
+            limits:
+              cpu: "2000m"   # ffmpeg transcoding inside nginx-rtmp exec_push
+              memory: "1Gi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+
+      volumes:
+        - name: livedata
+          persistentVolumeClaim:
+            claimName: oes-livedata
+
+---
+# =============================================================================
+# RTMP Ingest Service — LoadBalancer (external access for stream publishers)
+# For cloud: annotate with provider-specific NLB settings below.
+# For on-prem / bare-metal: change type to NodePort.
+# =============================================================================
+apiVersion: v1
+kind: Service
+metadata:
+  name: oes-liveserver-rtmp
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-liveserver
+    app.kubernetes.io/component: live-streaming
+    app.kubernetes.io/part-of: oes-platform
+  annotations:
+    # AWS NLB (TCP, not ALB — RTMP is not HTTP)
+    service.beta.kubernetes.io/aws-load-balancer-type: "nlb"
+    service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: "true"
+    # GKE: comment out AWS annotations and uncomment below
+    # cloud.google.com/load-balancer-type: "External"
+spec:
+  type: LoadBalancer
+  selector:
+    app.kubernetes.io/name: oes-liveserver
+  ports:
+    - name: rtmp
+      port: 1935
+      targetPort: 1935
+      protocol: TCP
+  externalTrafficPolicy: Local  # Preserve client IP; avoids double-hop

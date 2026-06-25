@@ -29,11 +29,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
     && rm -rf /var/lib/apt/lists/*
 
+# Create non-root user and group
+RUN groupadd -r oesgroup && useradd -r -g oesgroup oesuser
+
 WORKDIR /app/OES/IntelligenceSupport
 
 COPY --from=builder /app/OES/IntelligenceSupport/ .
 
+# Own the workdir by the non-root user
+RUN chown -R oesuser:oesgroup /app/OES/IntelligenceSupport
+
 ENV PYTHONPATH="${PYTHONPATH}:/app/OES/IntelligenceSupport/dependencies"
+
+# Switch to non-root user
+USER oesuser
 
 EXPOSE 50051
 

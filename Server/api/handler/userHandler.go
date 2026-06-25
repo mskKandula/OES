@@ -177,8 +177,9 @@ func (h *Handler) QuestionGen(c *gin.Context) {
 		return
 	}
 
+	clientId := c.GetString("clientId")
 	ctx := c.Request.Context()
-	resp, err := h.UserService.GenQuestion(ctx, questionRequest.Paragraph)
+	resp, err := h.UserService.GenQuestion(ctx, questionRequest.Paragraph, clientId, questionRequest.ContextId)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return

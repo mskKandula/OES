@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0equestgen.proto\x12\x08questgen\"\"\n\x0fQuestGenRequest\x12\x0f\n\x07request\x18\x01 \x01(\t\"$\n\x10QuestGenResponse\x12\x10\n\x08response\x18\x01 \x01(\t\":\n\x12\x41skQuestionRequest\x12\x10\n\x08question\x18\x01 \x01(\t\x12\x12\n\ncontext_id\x18\x02 \x01(\t\"%\n\x13\x41skQuestionResponse\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\t2\xa4\x01\n\x0fQuestGenService\x12\x43\n\x08QuestGen\x12\x19.questgen.QuestGenRequest\x1a\x1a.questgen.QuestGenResponse\"\x00\x12L\n\x0b\x41skQuestion\x12\x1c.questgen.AskQuestionRequest\x1a\x1d.questgen.AskQuestionResponse\"\x00\x42\x13Z\x11./pkg/questgen/pbb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0equestgen.proto\x12\x08questgen\"I\n\x0fQuestGenRequest\x12\x0f\n\x07request\x18\x01 \x01(\t\x12\x11\n\tclient_id\x18\x02 \x01(\t\x12\x12\n\ncontext_id\x18\x03 \x01(\t\"$\n\x10QuestGenResponse\x12\x10\n\x08response\x18\x01 \x01(\t\"M\n\x12\x41skQuestionRequest\x12\x10\n\x08question\x18\x01 \x01(\t\x12\x12\n\ncontext_id\x18\x02 \x01(\t\x12\x11\n\tclient_id\x18\x03 \x01(\t\"%\n\x13\x41skQuestionResponse\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\t2\xa4\x01\n\x0fQuestGenService\x12\x43\n\x08QuestGen\x12\x19.questgen.QuestGenRequest\x1a\x1a.questgen.QuestGenResponse\"\x00\x12L\n\x0b\x41skQuestion\x12\x1c.questgen.AskQuestionRequest\x1a\x1d.questgen.AskQuestionResponse\"\x00\x42\x13Z\x11./pkg/questgen/pbb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,13 +33,13 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'Z\021./pkg/questgen/pb'
   _globals['_QUESTGENREQUEST']._serialized_start=28
-  _globals['_QUESTGENREQUEST']._serialized_end=62
-  _globals['_QUESTGENRESPONSE']._serialized_start=64
-  _globals['_QUESTGENRESPONSE']._serialized_end=100
-  _globals['_ASKQUESTIONREQUEST']._serialized_start=102
-  _globals['_ASKQUESTIONREQUEST']._serialized_end=160
-  _globals['_ASKQUESTIONRESPONSE']._serialized_start=162
-  _globals['_ASKQUESTIONRESPONSE']._serialized_end=199
-  _globals['_QUESTGENSERVICE']._serialized_start=202
-  _globals['_QUESTGENSERVICE']._serialized_end=366
+  _globals['_QUESTGENREQUEST']._serialized_end=101
+  _globals['_QUESTGENRESPONSE']._serialized_start=103
+  _globals['_QUESTGENRESPONSE']._serialized_end=139
+  _globals['_ASKQUESTIONREQUEST']._serialized_start=141
+  _globals['_ASKQUESTIONREQUEST']._serialized_end=218
+  _globals['_ASKQUESTIONRESPONSE']._serialized_start=220
+  _globals['_ASKQUESTIONRESPONSE']._serialized_end=257
+  _globals['_QUESTGENSERVICE']._serialized_start=260
+  _globals['_QUESTGENSERVICE']._serialized_end=424
 # @@protoc_insertion_point(module_scope)

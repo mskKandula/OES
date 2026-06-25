@@ -1,0 +1,134 @@
+# =============================================================================
+# OES — MQServer Deployment (Go + ffmpeg async worker)
+#
+# Design decisions:
+#   - Single replica by design: ffmpeg jobs are CPU-intensive; running multiple
+#     workers competing on the same shared media volume creates I/O contention.
+#     Horizontal scaling would require a job-queue partitioning strategy.
+#   - Shares the oes-media RWX PVC for reading source MP4 and writing HLS output.
+#   - SMTP credentials injected from oes-secrets via env vars.
+#   - RabbitMQ DSN injected via env var (RABBITMQ_DSN) — matches MQServer main.go.
+#   - ffmpeg is CPU-heavy; limits set generously to avoid throttling mid-encode.
+#   - No HTTP port — pure worker. Liveness probe uses a process check instead.
+#   - initContainer waits for RabbitMQ before starting to prevent panic on dial.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-mqserver
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-mqserver
+    app.kubernetes.io/component: mq-worker
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-mqserver
+  strategy:
+    type: Recreate  # Recreate (not RollingUpdate) to avoid two workers running simultaneously
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oes-mqserver
+        app.kubernetes.io/component: mq-worker
+        app.kubernetes.io/part-of: oes-platform
+    spec:
+      terminationGracePeriodSeconds: 120  # allow in-flight ffmpeg jobs to finish
+
+      securityContext:
+        runAsNonRoot: false  # ffmpeg requires certain capabilities
+        runAsUser: 0
+
+      initContainers:
+        - name: wait-for-rabbitmq
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z oes-messageq 5672; do
+                echo "Waiting for RabbitMQ (oes-messageq:5672)..."; sleep 3;
+              done
+              echo "RabbitMQ is up."
+
+      containers:
+        - name: oes-mqserver
+          # Replace with your registry image for production.
+          # For local docker-desktop: load with ctr -n k8s.io images import
+          image: mskkandula/oes:mqserver
+          imagePullPolicy: Always
+
+          env:
+            # RabbitMQ DSN — matches the env var read in MQServer/main.go
+            - name: RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oes-secrets
+                  key: rabbitmq-password
+            - name: RABBITMQ_USER
+              valueFrom:
+                secretKeyRef:
+                  name: oes-secrets
+                  key: rabbitmq-user
+            - name: RABBITMQ_DSN
+              value: "amqp://$(RABBITMQ_USER):$(RABBITMQ_PASSWORD)@oes-messageq/"
+
+            # SMTP credentials for welcome emails
+            - name: SMTP_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: oes-secrets
+                  key: smtp-email
+            - name: SMTP_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oes-secrets
+                  key: smtp-password
+
+          volumeMounts:
+            - name: media
+              mountPath: /app/OES/media
+
+          # No HTTP port — liveness checks that the process is running.
+          # Alpine does not include pgrep (procps package); use kill -0 on PID 1
+          # instead — the Go binary is the container entrypoint so it is PID 1.
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - "kill -0 1"
+            initialDelaySeconds: 10
+            periodSeconds: 30
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "256Mi"
+            limits:
+              cpu: "4000m"   # ffmpeg can saturate multiple cores
+              memory: "2Gi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+
+      volumes:
+        - name: media
+          persistentVolumeClaim:
+            claimName: oes-media
+
+      # Prefer scheduling on a node with spare CPU for ffmpeg
+      affinity:
+        nodeAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 50
+              preference:
+                matchExpressions:
+                  - key: workload-type
+                    operator: In
+                    values:
+                      - compute-intensive
