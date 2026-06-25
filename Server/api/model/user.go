@@ -12,18 +12,19 @@ type User struct {
 
 type QuestionRequest struct {
 	Paragraph string `json:"paragraph" bson:"paragraph" binding:"required" db:"paragraph"`
+	ContextId string `json:"contextId"` // Optional: topic/subject tag for metadata (e.g. "biology")
 }
 
 type AskQuestionRequest struct {
 	Question  string `json:"question" binding:"required"`
-	ContextId string `json:"contextId"`
+	ContextId string `json:"contextId"` // Optional: topic/subject filter
 }
 
 type UserService interface {
 	CreateUser(ctx context.Context, user User) error
 	CreateVideoFile(ctx context.Context, fileName, url, imagePath, clientId, dstPath string) error
-	GenQuestion(ctx context.Context, data string) (string, error)
-	AskQuestion(ctx context.Context, question, contextId string) (string, error)
+	GenQuestion(ctx context.Context, data, clientId, contextId string) (string, error)
+	AskQuestion(ctx context.Context, question, contextId, clientId string) (string, error)
 	CreateExam(ctx context.Context, clientId, examName, examType string) (int64, error)
 }
 
