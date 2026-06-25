@@ -4,16 +4,26 @@ import (
 	"context"
 	"encoding/json"
 	"log"
+	"runtime"
 	"strings"
+	"sync"
 
 	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/mskKandula/oes/api/model"
-	"github.com/mskKandula/oes/util/emailConfig"
 	xlsx "github.com/tealeg/xlsx/v3"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
 )
+
+// emailPayload is the message body published to the "email" RabbitMQ queue.
+type emailPayload struct {
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Mobile   string `json:"mobile"`
+	Password string `json:"password"` // plaintext — for welcome email only
+}
 
 var (
 	requiredKeys = []string{
@@ -22,22 +32,25 @@ var (
 		"Mobile",
 		"Password",
 	}
-	students []model.Student
 )
 
 type studentService struct {
 	StudentRepository model.StudentRepository
+	Publisher         model.Publisher
+	publishMu         sync.Mutex // guards concurrent Publish calls — *amqp.Channel is not goroutine-safe
 }
 
-// studentServiceCOnfig will hold repositories that will eventually be injected into this
-// this service layer
+// StudentServiceConfig holds dependencies injected into the student service layer.
 type StudentServiceConfig struct {
 	StudentRepository model.StudentRepository
+	// Publisher is used to publish async email jobs to the message queue.
+	Publisher model.Publisher
 }
 
 func NewStudentService(ssc *StudentServiceConfig) model.StudentService {
 	return &studentService{
 		StudentRepository: ssc.StudentRepository,
+		Publisher:         ssc.Publisher,
 	}
 }
 
@@ -48,32 +61,60 @@ func (ss *studentService) CreateStudents(ctx context.Context, byteArray []byte, 
 		return nil, err
 	}
 
+	students := make([]model.Student, len(result))
+
+	g, ctx := errgroup.WithContext(ctx)
+	sem := make(chan struct{}, runtime.NumCPU()) // bounded concurrency
+
 	for index, val := range result {
 
-		name := val.Get("Name").String()
-		email := val.Get("Email").String()
-		mobile := val.Get("Mobile").String()
-		password := val.Get("Password").String()
+		g.Go(func() error {
 
-		hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-		if err != nil {
-			return nil, err
-		}
-		hashedPassword := string(hash)
+			sem <- struct{}{}
+			defer func() { <-sem }()
 
-		id := index + 1
+			name := val.Get("Name").String()
+			email := val.Get("Email").String()
+			mobile := val.Get("Mobile").String()
+			password := val.Get("Password").String()
 
-		student := model.Student{id, name, email, mobile, hashedPassword, clientId}
+			hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.MinCost)
+			if err != nil {
+				return err
+			}
 
-		if err = ss.StudentRepository.Create(ctx, &student); err != nil {
-			return nil, err
-		}
+			student := model.Student{Id: index + 1, Name: name, Email: email, Mobile: mobile, Password: string(hash), ClientId: clientId}
 
-		if err = emailConfig.SendEmail(student); err != nil {
-			log.Println("Error while sending email", err)
-		}
+			if err = ss.StudentRepository.Create(ctx, &student); err != nil {
+				return err
+			}
 
-		students = append(students, student)
+			// Publish an async email job to MQServer instead of sending
+			// the email synchronously here.
+			payload := emailPayload{
+				Name:     name,
+				Email:    email,
+				Mobile:   mobile,
+				Password: password, // plaintext carried only in the transient MQ message
+			}
+			if msgBody, jsonErr := json.Marshal(payload); jsonErr != nil {
+				log.Printf("email job: failed to marshal payload for %s: %v", email, jsonErr)
+			} else {
+				ss.publishMu.Lock()
+				pubErr := ss.Publisher.PublishMessageWithContext(ctx, "email", msgBody)
+				ss.publishMu.Unlock()
+				if pubErr != nil {
+					log.Printf("email job: failed to publish for %s: %v", email, pubErr)
+				}
+			}
+
+			students[index] = student
+			return nil
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return nil, err
 	}
 
 	return students, nil

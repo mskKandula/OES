@@ -1,15 +1,11 @@
 # Stage 1 as builder
-FROM golang:1.18-alpine as builder
+FROM golang:1.26-alpine AS builder
 
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/server
 
 # Copy Go Application Dependencies
-COPY ./Server/go.mod .
-COPY ./Server/go.sum .
-
-# To keep only actual dependencies
-RUN go mod tidy
+COPY ./Server/go.mod ./Server/go.sum ./
 
 # Download dependencies 
 RUN go mod download
@@ -18,19 +14,12 @@ RUN go mod download
 COPY ./Server/ .
 
 # Build the Go app
-RUN go build -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main .
 
 ########### Stage 2 ###########
 
 #Define the running image
-FROM alpine:3.17
-
-# For CDN to serve uploaded video files
-RUN mkdir -p /app/OES/media/video
-
-# Install git && ffmpeg
-RUN apk update && \
-    apk upgrade
+FROM alpine:3.23
 
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/server

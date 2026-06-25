@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	fileTextLines []string
-	// BufChan       = make(chan string, 10)
-	examId int64
+// BufChan       = make(chan string, 10)
+// Removed global fileTextLines to prevent memory leaks
+// Removed global examId to prevent race conditions
 )
 
 func (h *Handler) SignUp(c *gin.Context) {
@@ -72,31 +72,6 @@ func (h *Handler) VideoUpload(c *gin.Context) {
 
 	m3u8Path := filepath.Join("/media/video", clientId, fileName, "index.m3u8")
 	imagePath := filepath.Join("/media/video", clientId, fileName, imageName)
-
-	// FilePath Creation
-	// dstFile, err := Create(dstPath)
-
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	// fileData, err := file.Open()
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	// defer fileData.Close()
-
-	// _, err = io.Copy(dstFile, fileData)
-
-	// if err != nil {
-	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-	// 	return
-	// }
-
-	// defer dstFile.Close()
 
 	// Upload the file to specific dst.
 	if err = c.SaveUploadedFile(file, dstPath); err != nil {
@@ -174,8 +149,8 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 
 	fileScanner.Split(bufio.ScanLines)
 
-	// reset previously stored questions to avoid memory growth across requests
-	fileTextLines = fileTextLines[:0]
+	// Use local variable instead of global to avoid memory leaks and race conditions
+	fileTextLines := make([]string, 0, 100) // Pre-allocate with capacity for better performance
 	for fileScanner.Scan() {
 		fileTextLines = append(fileTextLines, fileScanner.Text())
 	}
@@ -183,22 +158,17 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 	clientId := c.GetString("clientId")
 	ctx := c.Request.Context()
 
-	examId, err = h.UserService.CreateExam(ctx, clientId, bindFile.ExamName, bindFile.ExamType)
+	examId, err := h.UserService.CreateExam(ctx, clientId, bindFile.ExamName, bindFile.ExamType)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Unable to insert exam data"})
 		return
 	}
 
+	// Cache questions for retrieval by students
+	h.QuestionCache.Set(examId, fileTextLines)
+
 	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines, "examId": examId})
 }
-
-// file path creation
-// func Create(path string) (*os.File, error) {
-// 	if err := os.MkdirAll(filepath.Dir(path), 0750); err != nil {
-// 		return nil, err
-// 	}
-// 	return os.Create(path)
-// }
 
 func (h *Handler) QuestionGen(c *gin.Context) {
 	questionRequest := model.QuestionRequest{}

@@ -1,11 +1,10 @@
 import store from '@/store'
 
 const HEARTBEAT_TIMEOUT = (1000 * 12);
-const HEARTBEAT_VALUE = 1;
 
 export function connectWebsocket() {
 
-    const url = new URL("ws://" + window.location.host + "/r/ws");
+    const url = new URL("ws://" + globalThis.location.host + "/r/ws");
     url.searchParams.append("role", sessionStorage.getItem("userType"));
     url.searchParams.append("id", sessionStorage.getItem("clientId"));
     url.searchParams.append("userId", sessionStorage.getItem("userId"));
@@ -24,37 +23,11 @@ export function connectWebsocket() {
 
     ws.onmessage = (evt) => {
         let data = evt.data;
-        if (isBinary(data)) {
-            heartBeat(ws)
-        } else {
             data = data.split(/\r?\n/);
             mutateData(data[0]);
-            data = "";
-        }
     };
 }
 
-function isBinary(obj) {
-    return typeof obj === 'object' && Object.prototype.toString.call(obj) === '[object Blob]';
-}
-
-function heartBeat(ws) {
-    if (!ws) {
-        return;
-    } else if (ws.pingTimeout) {
-        clearTimeout(ws.pingTimeout);
-    }
-
-    ws.pingTimeout = setTimeout(() => {
-        ws.close();
-
-        // business logic for deciding whether or not to reconnect
-    }, HEARTBEAT_TIMEOUT);
-
-    const data = new Uint8Array(1);
-    data[0] = HEARTBEAT_VALUE;
-    ws.send(data);
-}
 
 function mutateData(data) {
     let parsedData = JSON.parse(data);

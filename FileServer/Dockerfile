@@ -1,35 +1,23 @@
-FROM golang:1.16-alpine as builder1
-
-# Install git
-RUN apk update && \
-    apk upgrade && \
-    apk add git
+FROM golang:1.26-alpine AS builder1
 
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/fileserver
 
-# We want to populate the module cache based on the go.{mod,sum} files.
+# We want to populate the module cache based on the go.{mod} files.
 COPY ./FileServer/go.mod .
-
-# To keep only actual dependencies
-RUN go mod tidy
 
 RUN go mod download
 
 COPY ./FileServer/ .
 
 # Build the Go app
-RUN go build -o files .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o files .
 
 
 ########### Stage 2 ###########
 
 #Define the running image
-FROM alpine:3.17
-
-# Install
-RUN apk update && \
-    apk upgrade
+FROM alpine:3.23
 
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/fileserver

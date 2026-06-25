@@ -1,5 +1,5 @@
 # Stage 1 as builder
-FROM python:3.10.5-alpine as builder
+FROM python:3.14-alpine AS builder
 
 # Install necessary build dependencies and libraries
 RUN apk add --no-cache \
@@ -16,13 +16,13 @@ WORKDIR /app/OES/IntelligenceSupport
 # Install app dependencies
 COPY ./IntelligenceSupport/questgen/requirements.txt .
 
-RUN pip install --target=/app/OES/IntelligenceSupport/dependencies -r requirements.txt
+RUN pip install --no-cache-dir --target=/app/OES/IntelligenceSupport/dependencies -r requirements.txt
 
 # Copy code files
 COPY ./IntelligenceSupport/questgen/ .
 
 # Stage 2
-FROM python:3.10.5-alpine
+FROM python:3.14-alpine
 
 # Install runtime dependencies
 RUN apk add --no-cache libstdc++ libatomic
@@ -30,7 +30,7 @@ RUN apk add --no-cache libstdc++ libatomic
 # Create app directory
 WORKDIR /app/OES/IntelligenceSupport
 
-COPY --from=builder	/app/OES/IntelligenceSupport/ .
+COPY --from=builder /app/OES/IntelligenceSupport/ .
 
 ENV PYTHONPATH="${PYTHONPATH}:/app/OES/IntelligenceSupport/dependencies"
 

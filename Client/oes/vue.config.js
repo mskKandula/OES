@@ -1,5 +1,13 @@
 
 module.exports = {
+    configureWebpack: {
+    resolve: {
+      fallback: {
+        crypto: false,
+        util: false
+      }
+    }
+  },
     devServer: {
         port: 8085, // CHANGE YOUR PORT HERE!
         https: true,
