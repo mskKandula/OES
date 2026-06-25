@@ -101,9 +101,9 @@ func InitRouter() *gin.Engine {
 	student := r.Group("/r").Use(middleware.Auth("Student"))
 	{
 		student.POST("/uploadExamProof", h.UploadExamProof)
+		student.POST("/askQuestion", h.AskQuestion)
 
 		student.GET("/getQuestions", h.GetQuestions)
-
 	}
 
 	return r

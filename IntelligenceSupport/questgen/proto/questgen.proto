@@ -1,22 +1,48 @@
-syntax ="proto3";
+syntax = "proto3";
 
 package questgen;
 
-option go_package="./pkg/questgen/pb";
+option go_package = "./pkg/questgen/pb";
 
 
-message QuestGenRequest{
-    string request=1;
+// ── Shared messages ──────────────────────────────────────────────────────────
+
+message QuestGenRequest {
+    string request = 1;
 }
 
-message QuestGenResponse{
-    string response =1;
+message QuestGenResponse {
+    string response = 1;
 }
 
-service QuestGenService{
-    // Unary
-    rpc QuestGen(QuestGenRequest)returns(QuestGenResponse){};
+// ── Student Q&A messages ─────────────────────────────────────────────────────
+
+message AskQuestionRequest {
+    string question    = 1; // The student's question
+    string context_id  = 2; // Optional: topic/subject scope for retrieval (e.g. "biology")
 }
 
-//In proto file folder
-//python -m grpc_tools.protoc --proto_path=. ./questgen.proto --python_out=../questgen/pb --grpc_python_out=../questgen/pb
+message AskQuestionResponse {
+    string answer = 1;
+}
+
+// ── Service ──────────────────────────────────────────────────────────────────
+
+service QuestGenService {
+    // Examiner: Generate questions from a paragraph of text (RAG pipeline)
+    rpc QuestGen(QuestGenRequest) returns (QuestGenResponse) {};
+
+    // Student: Ask a question against indexed course material
+    rpc AskQuestion(AskQuestionRequest) returns (AskQuestionResponse) {};
+}
+
+// ── Code-generation commands ─────────────────────────────────────────────────
+// Python stubs (run from proto/ folder):
+//   python -m grpc_tools.protoc --proto_path=. ./questgen.proto \
+//     --python_out=../questgen/pb --grpc_python_out=../questgen/pb
+//
+// Go stubs (run from Server/ folder):
+//   protoc --proto_path=../IntelligenceSupport/questgen/proto \
+//     --go_out=. --go_opt=module=github.com/mskKandula/oes \
+//     --go-grpc_out=. --go-grpc_opt=module=github.com/mskKandula/oes \
+//     questgen.proto
