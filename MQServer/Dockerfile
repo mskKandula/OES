@@ -20,11 +20,20 @@ FROM alpine:3.21
 # Install ffmpeg
 RUN apk add --no-cache ffmpeg
 
+# Create non-root user and group
+RUN addgroup -S oesgroup && adduser -S oesuser -G oesgroup
+
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/mqServer
 
 # Copy built binary application from 'builder' image
 COPY --from=builder1 /app/OES/mqServer/main .
+
+# Own the workdir by the non-root user
+RUN chown -R oesuser:oesgroup /app/OES/mqServer
+
+# Switch to non-root user
+USER oesuser
 
 # Run the binary program produced by `go install`
 CMD ["./main"]
