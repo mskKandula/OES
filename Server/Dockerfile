@@ -21,6 +21,9 @@ RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main .
 #Define the running image
 FROM alpine:3.23
 
+# Create non-root user and group
+RUN addgroup -S oesgroup && adduser -S oesuser -G oesgroup
+
 # Set the Current Working Directory inside the container
 WORKDIR /app/OES/server
 
@@ -29,7 +32,13 @@ COPY --from=builder /app/OES/server/config.json .
 # Copy built binary application from 'builder' image
 COPY --from=builder /app/OES/server/main .
 
-# This container exposes port 8080 to the outside world
+# Own the workdir by the non-root user
+RUN chown -R oesuser:oesgroup /app/OES/server
+
+# Switch to non-root user
+USER oesuser
+
+# This container exposes port 9000 to the outside world
 EXPOSE 9000
 
 # Run the binary program produced by `go install`
