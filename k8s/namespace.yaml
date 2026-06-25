@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: oes
+  labels:
+    app.kubernetes.io/name: oes
+    app.kubernetes.io/part-of: oes-platform
