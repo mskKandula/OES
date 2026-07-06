@@ -8,7 +8,7 @@ import (
 	"github.com/gobwas/ws"
 )
 
-var upgrader := ws.HTTPUpgrader{}
+var upgrader = ws.HTTPUpgrader{}
 
 func Upgrade(w http.ResponseWriter, r *http.Request) (net.Conn, error) {
 	conn, _, _, err := upgrader.Upgrade(r, w)
