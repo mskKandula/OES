@@ -3,7 +3,6 @@ package dalhelper
 import (
 	"context"
 	"fmt"
-	"net"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
@@ -32,17 +31,7 @@ func NewRabbitMQPublisher(ch *amqp.Channel) *RabbitMQPublisher {
 // GetRabbitMQConnectionWithQueues dials RabbitMQ and idempotently declares all
 // required durable queues before returning the channel.
 func GetRabbitMQConnectionWithQueues(rabbitMQDSN string) (*amqp.Channel, error) {
-	conn, err := amqp.DialConfig(rabbitMQDSN, amqp.Config{
-		// Heartbeat controls how often each side sends a heartbeat frame.
-		// If the broker doesn't receive one within 2× this interval it closes
-		// the connection, enabling fast detection of dead TCP connections.
-		Heartbeat: 10 * time.Second,
-		// Dial replaces the default dialer with one that enforces an explicit
-		// TCP connection timeout, preventing indefinite hangs at startup.
-		Dial: func(network, addr string) (net.Conn, error) {
-			return net.DialTimeout(network, addr, 10*time.Second)
-		},
-	})
+	conn, err := amqp.Dial(rabbitMQDSN)
 	if err != nil {
 		return nil, err
 	}
