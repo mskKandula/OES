@@ -2,10 +2,22 @@ package dalhelper
 
 import (
 	"context"
+	"fmt"
+	"net"
 	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 )
+
+// queues lists every durable queue the server needs to declare on startup.
+// All are durable (survive broker restart) and non-exclusive (shared across connections).
+var queues = []string{
+	"encode",
+	"email",
+	"code.execute.python",
+	"code.execute.go",
+	"code.execute.nodejs",
+}
 
 // RabbitMQPublisher implements model.Publisher backed by an AMQP channel.
 type RabbitMQPublisher struct {
@@ -17,55 +29,52 @@ func NewRabbitMQPublisher(ch *amqp.Channel) *RabbitMQPublisher {
 	return &RabbitMQPublisher{ch: ch}
 }
 
+// GetRabbitMQConnectionWithQueues dials RabbitMQ and idempotently declares all
+// required durable queues before returning the channel.
 func GetRabbitMQConnectionWithQueues(rabbitMQDSN string) (*amqp.Channel, error) {
-	conn, connError := amqp.Dial(rabbitMQDSN)
-	if connError != nil {
-		return nil, connError
+	conn, err := amqp.DialConfig(rabbitMQDSN, amqp.Config{
+		// Heartbeat controls how often each side sends a heartbeat frame.
+		// If the broker doesn't receive one within 2× this interval it closes
+		// the connection, enabling fast detection of dead TCP connections.
+		Heartbeat: 10 * time.Second,
+		// Dial replaces the default dialer with one that enforces an explicit
+		// TCP connection timeout, preventing indefinite hangs at startup.
+		Dial: func(network, addr string) (net.Conn, error) {
+			return net.DialTimeout(network, addr, 10*time.Second)
+		},
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	ch, err := conn.Channel()
 	if err != nil {
-		return ch, err
+		return nil, err
 	}
-	_, err = DeclareEncodeQueue(ch)
-	if err != nil {
-		return ch, err
-	}
-	_, err = DeclareEmailQueue(ch)
-	if err != nil {
-		return ch, err
+
+	for _, name := range queues {
+		if _, err = declareQueue(ch, name); err != nil {
+			return nil, fmt.Errorf("declare queue %q: %w", name, err)
+		}
 	}
 
 	return ch, nil
 }
 
-// DeclareEncodeQueue declares the durable "encode" queue on the given channel.
-// Using durable:true so pending encode jobs survive a RabbitMQ broker restart.
-func DeclareEncodeQueue(ch *amqp.Channel) (amqp.Queue, error) {
+// declareQueue declares a single durable, non-exclusive, non-auto-delete queue.
+// It is idempotent — safe to call even if the queue already exists.
+func declareQueue(ch *amqp.Channel, name string) (amqp.Queue, error) {
 	return ch.QueueDeclare(
-		"encode", // name
-		true,     // durable
-		false,    // delete when unused
-		false,    // exclusive
-		false,    // no-wait
-		nil,      // arguments
+		name,  // name
+		true,  // durable
+		false, // delete when unused
+		false, // exclusive
+		false, // no-wait
+		nil,   // arguments
 	)
 }
 
-// DeclareEmailQueue declares the durable "email" queue on the given channel.
-// Using durable:true so pending email jobs survive a RabbitMQ broker restart.
-func DeclareEmailQueue(ch *amqp.Channel) (amqp.Queue, error) {
-	return ch.QueueDeclare(
-		"email", // name
-		true,    // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
-	)
-}
-
-// PublishMessage publishes a JSON body to the named queue as a persistent message.
+// PublishMessageWithContext publishes a JSON body to the named queue as a persistent message.
 func (p *RabbitMQPublisher) PublishMessageWithContext(ctx context.Context, queueName string, body []byte) error {
 	return p.ch.PublishWithContext(
 		ctx,
