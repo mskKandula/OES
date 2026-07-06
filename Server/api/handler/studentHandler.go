@@ -99,7 +99,7 @@ func (h *Handler) DownloadStudents(c *gin.Context) {
 	ReportName := "All Students Details" + ".xlsx"
 
 	c.Writer.Header().Add("Content-type", "application/octet-stream")
-	c.Writer.Header().Set("Content-Disposition", "attachment; filename="+ReportName+".xlsx")
+	c.Writer.Header().Set("Content-Disposition", "attachment; filename="+ReportName)
 	c.Writer.Header().Set("Content-Transfer-Encoding", "binary")
 	file.Write(c.Writer)
 }
@@ -200,4 +200,46 @@ func (h *Handler) AskQuestion(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"answer": answer})
+}
+
+// ExecuteCode handles student code execution requests.
+// POST /r/executeCode
+// Body: { "language": "python"|"go"|"nodejs", "code": "...", "stdin": "", "timeoutMs": 5000 }
+//
+// Response 200 OK (fast path — result within 5s):
+//
+//	{ "submissionId": "...", "pending": false, "status": "completed", "stdout": "...",
+//	  "stderr": "...", "exitCode": 0, "durationMs": 89 }
+//
+// Response 202 Accepted (slow path — still running):
+//
+//	{ "submissionId": "...", "pending": true, "message": "..." }
+//	Result is delivered asynchronously via WebSocket Type-6 message.
+func (h *Handler) ExecuteCode(c *gin.Context) {
+	var req model.CodeSubmitRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userId := c.GetString("userId")
+	clientId := c.GetString("clientId")
+	ctx := c.Request.Context()
+
+	resp, err := h.StudentService.SubmitCode(ctx, req, userId, clientId)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if resp.Pending {
+		c.JSON(http.StatusAccepted, gin.H{
+			"submissionId": resp.SubmissionId,
+			"pending":      true,
+			"message":      "execution in progress, result will be delivered via WebSocket",
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, resp)
 }
