@@ -1,0 +1,57 @@
+# =============================================================================
+# OES — Kustomize Root Kustomization (Local Docker Desktop)
+#
+# Apply the entire stack:
+#   kubectl apply -k k8s/
+# =============================================================================
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: oes
+
+resources:
+  # 1. Namespace first
+  - namespace.yaml
+
+  # 2. Configuration + Secrets
+  - configmap.yaml
+  - secret.yaml
+
+  # 3. Storage
+  - pvc.yaml
+
+  # 4. Stateful data-tier services
+  - db-deployment.yaml
+  - cache-deployment.yaml
+  - messageq-deployment.yaml
+
+  # 5. RAG infrastructure (required by isupport)
+  - ollama-deployment.yaml
+  - vectordb-deployment.yaml
+
+  # 6. Application services
+  - isupport-deployment.yaml
+  - server-deployment.yaml
+  - fileserver-deployment.yaml
+  - mqserver-deployment.yaml
+  - liveserver-deployment.yaml
+
+  # 7. Frontend client (Nginx SPA + reverse proxy)
+  - client-deployment.yaml
+
+  # 8. Code execution — warm runner pools + executor service
+  - runner-python-deployment.yaml
+  - runner-go-deployment.yaml
+  - runner-nodejs-deployment.yaml
+  - codeexecutor-rbac.yaml
+  - codeexecutor-deployment.yaml
+
+  # Note: ingress.yaml and networkpolicy.yaml excluded for local Docker Desktop
+  # Uncomment below to apply network policies and ingress on a full cluster:
+  # - networkpolicy.yaml
+  # - ingress.yaml
+
+# ── Common labels applied to ALL resources ────────────────────────────────────
+commonLabels:
+  app.kubernetes.io/managed-by: kustomize
+  app.kubernetes.io/part-of: oes-platform
