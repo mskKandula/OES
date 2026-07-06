@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"html/template"
 	"log"
+	"net"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -12,6 +13,7 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	amqp "github.com/rabbitmq/amqp091-go"
 	gomail "gopkg.in/gomail.v2"
@@ -57,104 +59,152 @@ func failOnError(err error, msg string) {
 	}
 }
 
+// dialRabbitMQ establishes a RabbitMQ connection with an explicit TCP dial
+// timeout and heartbeat. It retries indefinitely with exponential back-off
+// (capped at 30 s) so that MQServer recovers automatically if the broker
+// restarts while the service is running.
+func dialRabbitMQ(dsn string) *amqp.Connection {
+	backoff := 2 * time.Second
+	const maxBackoff = 30 * time.Second
+
+	for {
+		conn, err := amqp.DialConfig(dsn, amqp.Config{
+			// Heartbeat controls how often each side sends a heartbeat frame.
+			// If the broker doesn't receive one within 2× this interval it
+			// closes the connection, enabling fast detection of dead TCP links.
+			Heartbeat: 10 * time.Second,
+			// Dial enforces an explicit TCP connection timeout, preventing
+			// indefinite hangs when the broker is temporarily unreachable.
+			Dial: func(network, addr string) (net.Conn, error) {
+				return net.DialTimeout(network, addr, 10*time.Second)
+			},
+		})
+		if err == nil {
+			log.Println("[amqp] connected to RabbitMQ")
+			return conn
+		}
+		log.Printf("[amqp] connect failed: %v — retrying in %s", err, backoff)
+		time.Sleep(backoff)
+		backoff *= 2
+		if backoff > maxBackoff {
+			backoff = maxBackoff
+		}
+	}
+}
+
 func main() {
 	rabbitDSN := os.Getenv("RABBITMQ_DSN")
 	if rabbitDSN == "" {
 		rabbitDSN = "amqp://rabbitmq:rabbitmq@messageq/"
 	}
 
-	conn, err := amqp.Dial(rabbitDSN)
-	failOnError(err, "Failed to connect to RabbitMQ")
-	defer conn.Close()
-
-	ch, err := conn.Channel()
-	failOnError(err, "Failed to open a channel")
-	defer ch.Close()
-
-	// ── Video encoding queue (existing) ─────────────────────────────────────
-	encodeQ, err := ch.QueueDeclare(
-		"encode", // name
-		true,    // durable
-		false,    // delete when unused
-		false,    // exclusive
-		false,    // no-wait
-		nil,      // arguments
-	)
-	failOnError(err, "Failed to declare encode queue")
-
-	encodeMsgs, err := ch.Consume(
-		encodeQ.Name, // queue
-		"",           // consumer tag
-		true,         // auto-ack
-		false,        // exclusive
-		false,        // no-local
-		false,        // no-wait
-		nil,          // args
-	)
-	failOnError(err, "Failed to register encode consumer")
-
-	// ── Email queue (new) ────────────────────────────────────────────────────
-	// Declared as durable so pending jobs survive a broker restart.
-	emailQ, err := ch.QueueDeclare(
-		"email", // name
-		true,    // durable
-		false,   // delete when unused
-		false,   // exclusive
-		false,   // no-wait
-		nil,     // arguments
-	)
-	failOnError(err, "Failed to declare email queue")
-
-	emailMsgs, err := ch.Consume(
-		emailQ.Name, // queue
-		"",          // consumer tag
-		false,       // auto-ack — manual ack for reliability
-		false,       // exclusive
-		false,       // no-local
-		false,       // no-wait
-		nil,         // args
-	)
-	failOnError(err, "Failed to register email consumer")
-
 	workerCount := runtime.NumCPU()
 	sem := make(chan struct{}, workerCount)
 
-	// ── Video encoding consumer ──────────────────────────────────────────────
-	go func() {
-		for d := range encodeMsgs {
-			log.Printf("[encode] received: %s", d.Body)
-			sem <- struct{}{}
-			go func(msg amqp.Delivery) {
-				defer func() { <-sem }()
-				HlsVideoConversion(string(msg.Body))
-			}(d)
-		}
-	}()
-
-	// ── Email consumer ───────────────────────────────────────────────────────
-	go func() {
-		for d := range emailMsgs {
-			log.Printf("[email] received job")
-			sem <- struct{}{}
-			go func(msg amqp.Delivery) {
-				defer func() { <-sem }()
-				SendWelcomeEmail(msg.Body)
-				// Ack only after successful send; on failure the message is
-				// Nack'd with requeue=true so it will be retried.
-				if err := msg.Ack(false); err != nil {
-					log.Printf("[email] ack failed: %v", err)
-				}
-			}(d)
-		}
-	}()
-
-	log.Printf("[*] Waiting for messages. To exit press CTRL+C")
-
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
 
-	log.Printf("[*] Shutting down MQServer")
+	for {
+		conn := dialRabbitMQ(rabbitDSN)
+
+		ch, err := conn.Channel()
+		failOnError(err, "Failed to open a channel")
+
+		// ── Video encoding queue ─────────────────────────────────────────────
+		encodeQ, err := ch.QueueDeclare(
+			"encode", // name
+			true,     // durable
+			false,    // delete when unused
+			false,    // exclusive
+			false,    // no-wait
+			nil,      // arguments
+		)
+		failOnError(err, "Failed to declare encode queue")
+
+		encodeMsgs, err := ch.Consume(
+			encodeQ.Name, // queue
+			"",           // consumer tag
+			true,         // auto-ack
+			false,        // exclusive
+			false,        // no-local
+			false,        // no-wait
+			nil,          // args
+		)
+		failOnError(err, "Failed to register encode consumer")
+
+		// ── Email queue ──────────────────────────────────────────────────────
+		// Declared as durable so pending jobs survive a broker restart.
+		emailQ, err := ch.QueueDeclare(
+			"email", // name
+			true,    // durable
+			false,   // delete when unused
+			false,   // exclusive
+			false,   // no-wait
+			nil,     // arguments
+		)
+		failOnError(err, "Failed to declare email queue")
+
+		emailMsgs, err := ch.Consume(
+			emailQ.Name, // queue
+			"",          // consumer tag
+			false,       // auto-ack — manual ack for reliability
+			false,       // exclusive
+			false,       // no-local
+			false,       // no-wait
+			nil,         // args
+		)
+		failOnError(err, "Failed to register email consumer")
+
+		// connClosed fires when the AMQP connection drops (broker restart, etc.)
+		connClosed := conn.NotifyClose(make(chan *amqp.Error, 1))
+
+		// ── Video encoding consumer ──────────────────────────────────────────
+		go func() {
+			for d := range encodeMsgs {
+				log.Printf("[encode] received: %s", d.Body)
+				sem <- struct{}{}
+				go func(msg amqp.Delivery) {
+					defer func() { <-sem }()
+					HlsVideoConversion(string(msg.Body))
+				}(d)
+			}
+		}()
+
+		// ── Email consumer ───────────────────────────────────────────────────
+		go func() {
+			for d := range emailMsgs {
+				log.Printf("[email] received job")
+				sem <- struct{}{}
+				go func(msg amqp.Delivery) {
+					defer func() { <-sem }()
+					SendWelcomeEmail(msg.Body)
+					// Ack only after successful send; on failure the message is
+					// Nack'd with requeue=true so it will be retried.
+					if err := msg.Ack(false); err != nil {
+						log.Printf("[email] ack failed: %v", err)
+					}
+				}(d)
+			}
+		}()
+
+		log.Printf("[*] Waiting for messages. To exit press CTRL+C")
+
+		// Block until either a shutdown signal or a connection error.
+		select {
+		case <-quit:
+			log.Printf("[*] Shutting down MQServer")
+			ch.Close()
+			conn.Close()
+			return
+		case amqpErr := <-connClosed:
+			if amqpErr != nil {
+				log.Printf("[amqp] connection lost: %v — reconnecting", amqpErr)
+			} else {
+				log.Printf("[amqp] connection closed — reconnecting")
+			}
+			// Fall through to the top of the loop to reconnect.
+		}
+	}
 }
 
 // SendWelcomeEmail unmarshals an emailPayload from body, renders the HTML
