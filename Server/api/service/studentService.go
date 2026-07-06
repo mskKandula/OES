@@ -3,11 +3,15 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 
+	redis "github.com/go-redis/redis/v8"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/sync/errgroup"
 
@@ -37,20 +41,24 @@ var (
 type studentService struct {
 	StudentRepository model.StudentRepository
 	Publisher         model.Publisher
-	publishMu         sync.Mutex // guards concurrent Publish calls — *amqp.Channel is not goroutine-safe
+	publishMu         sync.Mutex   // guards concurrent Publish calls — *amqp.Channel is not goroutine-safe
+	redis             *redis.Client // used for Subscribe on code execution result channel
 }
 
 // StudentServiceConfig holds dependencies injected into the student service layer.
 type StudentServiceConfig struct {
 	StudentRepository model.StudentRepository
-	// Publisher is used to publish async email jobs to the message queue.
+	// Publisher is used to publish async email/code jobs to the message queue.
 	Publisher model.Publisher
+	// Redis is used to subscribe to code execution result notifications.
+	Redis *redis.Client
 }
 
 func NewStudentService(ssc *StudentServiceConfig) model.StudentService {
 	return &studentService{
 		StudentRepository: ssc.StudentRepository,
 		Publisher:         ssc.Publisher,
+		redis:             ssc.Redis,
 	}
 }
 
@@ -163,6 +171,88 @@ func prepareResult(keys []string, vals []interface{}) gjson.Result {
 	}
 
 	return gjson.Parse(data)
+}
+
+// allowedLanguages defines the set of languages accepted for code execution.
+var allowedLanguages = map[string]bool{
+	"python": true,
+	"go":     true,
+	"nodejs": true,
+}
+
+// SubmitCode validates and publishes a code execution job to RabbitMQ, then waits
+// up to 5 seconds for the code-executor microservice to publish a result via Redis
+// Pub/Sub. If the result arrives within 5s, it is returned directly (200 OK fast path).
+// If not, only the submissionId is returned and the result is delivered via WebSocket
+// Type-6 message by the existing oes-server WebSocket hub (202 Accepted slow path).
+func (ss *studentService) SubmitCode(ctx context.Context, req model.CodeSubmitRequest, userId, clientId string) (model.CodeSubmitResponse, error) {
+
+	// Validate language
+	if !allowedLanguages[req.Language] {
+		return model.CodeSubmitResponse{}, fmt.Errorf("unsupported language: %s — allowed: python, go, nodejs", req.Language)
+	}
+
+	// Validate code size
+	if len(req.Code) > 64*1024 {
+		return model.CodeSubmitResponse{}, fmt.Errorf("code exceeds 64KB limit")
+	}
+
+	// Default / clamp timeout
+	if req.TimeoutMs <= 0 || req.TimeoutMs > 30000 {
+		req.TimeoutMs = 10000
+	}
+
+	submissionId := uuid.New().String()
+
+	// Subscribe to the result channel BEFORE publishing.
+	// Critical ordering: if code-executor finishes and publishes before we subscribe,
+	// we would miss the message and always fall through to the 202 path.
+	sub := ss.redis.Subscribe(ctx, "result:"+submissionId)
+	defer sub.Close()
+
+	// Build the job envelope consumed by code-executor
+	job := model.CodeJob{
+		SubmissionId: submissionId,
+		Language:     req.Language,
+		Code:         req.Code,
+		Stdin:        req.Stdin,
+		TimeoutMs:    req.TimeoutMs,
+		UserId:       userId,
+		ClientId:     clientId,
+	}
+
+	body, err := json.Marshal(job)
+	if err != nil {
+		return model.CodeSubmitResponse{}, fmt.Errorf("failed to marshal code job: %w", err)
+	}
+
+	// Publish to the per-language RabbitMQ queue.
+	// Use the same publishMu pattern as CreateStudents() — amqp.Channel is not goroutine-safe.
+	ss.publishMu.Lock()
+	pubErr := ss.Publisher.PublishMessageWithContext(ctx, "code.execute."+req.Language, body)
+	ss.publishMu.Unlock()
+	if pubErr != nil {
+		return model.CodeSubmitResponse{}, fmt.Errorf("failed to queue code job: %w", pubErr)
+	}
+
+	// Mixed pattern: optimistic sync wait with async fallback.
+	select {
+	case msg := <-sub.Channel():
+		// Fast path — code-executor published result within 5s.
+		var resp model.CodeSubmitResponse
+		if jsonErr := json.Unmarshal([]byte(msg.Payload), &resp); jsonErr != nil {
+			return model.CodeSubmitResponse{}, fmt.Errorf("failed to parse execution result: %w", jsonErr)
+		}
+		resp.Pending = false
+		return resp, nil
+
+	case <-time.After(5 * time.Second):
+		// Slow path — job is still running; result arrives via WebSocket Type-6 message.
+		return model.CodeSubmitResponse{
+			SubmissionId: submissionId,
+			Pending:      true,
+		}, nil
+	}
 }
 
 func (ss *studentService) FetchStudents(ctx context.Context, clientId string) ([]model.Student, error) {
