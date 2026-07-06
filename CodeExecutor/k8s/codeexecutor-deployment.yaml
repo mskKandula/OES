@@ -1,0 +1,108 @@
+# =============================================================================
+# OES — code-executor Deployment + Service
+#
+# The code-executor service:
+#   - Consumes code execution jobs from RabbitMQ (one queue per language)
+#   - Uses Kubernetes pods/exec to run code inside warm runner pods
+#   - Deletes runner pods after execution
+#   - Publishes results to Redis (triggers oes-server 5s select + WebSocket)
+#
+# It communicates ONLY via RabbitMQ and Redis — no HTTP to/from oes-server.
+# No Service object needed (no inbound connections).
+#
+# The serviceAccountName gives it in-cluster RBAC to watch/exec/delete pods.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-code-executor
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-code-executor
+    app.kubernetes.io/component: code-executor
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  replicas: 1
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-code-executor
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oes-code-executor
+        app.kubernetes.io/component: code-executor
+        app.kubernetes.io/part-of: oes-platform
+    spec:
+      # ServiceAccount provides in-cluster RBAC for pod watch/exec/delete
+      serviceAccountName: oes-code-executor
+      automountServiceAccountToken: true
+
+      terminationGracePeriodSeconds: 30
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+      # Wait for RabbitMQ and Redis before starting
+      initContainers:
+        - name: wait-for-rabbitmq
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z oes-messageq 5672; do
+                echo "Waiting for RabbitMQ..."; sleep 3;
+              done
+              echo "RabbitMQ is up."
+
+        - name: wait-for-redis
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z oes-cache 6379; do
+                echo "Waiting for Redis..."; sleep 3;
+              done
+              echo "Redis is up."
+
+      containers:
+        - name: code-executor
+          image: mskkandula/oes:code-executor
+          imagePullPolicy: Always
+
+          env:
+            - name: RABBITMQ_DSN
+              value: "amqp://rabbitmq:rabbitmq@oes-messageq/"
+            - name: REDIS_DSN
+              value: "redis://oes-cache:6379/0"
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace  # automatically uses "oes"
+            - name: LANGUAGES
+              value: "python,go,nodejs"
+
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
