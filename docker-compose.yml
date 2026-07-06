@@ -26,14 +26,34 @@ services:
 
   cache:
     image: redis:8.0-alpine
-    command: ["redis-server", "--bind", "cache", "--port", "6379"]
+    command:
+      - redis-server
+      - --bind
+      - cache
+      - --port
+      - "6379"
+      - --maxmemory
+      - "256mb"
+      - --maxmemory-policy
+      - allkeys-lru
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --save
+      - "900 1"
+      - --save
+      - "300 10"
+      - --save
+      - "60 10000"
     restart: always
     healthcheck:
       test: ["CMD", "redis-cli", "-h", "cache", "ping"]
       interval: 10s
       timeout: 3s
       retries: 5
-
+    mem_limit: 512m
+    mem_reservation: 128m
     expose: ["6379"]
     volumes:
       - cache_data:/data
@@ -124,12 +144,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-
+    mem_limit: 1g
+    mem_reservation: 256m
     environment:
       RABBITMQ_ERLANG_COOKIE: "SWQOKODSQALRPCLNMEQG"
       RABBITMQ_DEFAULT_USER: "rabbitmq"
       RABBITMQ_DEFAULT_PASS: "rabbitmq"
       RABBITMQ_DEFAULT_VHOST: "/"
+      # Prevent broker from blocking publishers when memory reaches 40% of
+      # the container limit (1g * 0.4 = 400 MB). Mirrors k8s/messageq-deployment.yaml.
+      RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit vm_memory_high_watermark 0.4"
 
   ollama:
     image: ollama/ollama
