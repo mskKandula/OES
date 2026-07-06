@@ -102,6 +102,7 @@ func InitRouter() *gin.Engine {
 	{
 		student.POST("/uploadExamProof", h.UploadExamProof)
 		student.POST("/askQuestion", h.AskQuestion)
+		student.POST("/executeCode", h.ExecuteCode)
 
 		student.GET("/getQuestions", h.GetQuestions)
 	}
@@ -131,6 +132,7 @@ func getStudentService(ds *ds.DataSources) model.StudentService {
 	studentService := service.NewStudentService(&service.StudentServiceConfig{
 		StudentRepository: studentMySQLRepository,
 		Publisher:         ds.Publisher,
+		Redis:             ds.Redis,
 	})
 
 	return studentService
