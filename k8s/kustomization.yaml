@@ -1,5 +1,5 @@
 # =============================================================================
-# OES — Kustomize Root Kustomization (Local Docker Desktop)
+# OES — Kustomize Root Kustomization (Local kind cluster)
 #
 # Apply the entire stack:
 #   kubectl apply -k k8s/
@@ -39,10 +39,18 @@ resources:
   # 7. Frontend client (Nginx SPA + reverse proxy)
   - client-deployment.yaml
 
-  # Note: ingress.yaml and networkpolicy.yaml excluded for local Docker Desktop
-  # Uncomment below to apply network policies and ingress on a full cluster:
-  # - networkpolicy.yaml
+  # 8. Code execution — warm runner pools + executor service
+  - codeexecutor-rbac.yaml
+  - codeexecutor-deployment.yaml
+  - runner-python-deployment.yaml
+  - runner-go-deployment.yaml
+  - runner-nodejs-deployment.yaml
+
+  # Note: ingress.yaml excluded for local kind cluster (no Ingress controller).
+  # networkpolicy.yaml is included — it covers all services including code-executor.
+  # Uncomment ingress.yaml when deploying to a full cluster with an Ingress controller:
   # - ingress.yaml
+  - networkpolicy.yaml
 
 # ── Common labels applied to ALL resources ────────────────────────────────────
 commonLabels:
