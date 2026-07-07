@@ -1,0 +1,90 @@
+# =============================================================================
+# OES — Go Warm Runner Pool Deployment
+#
+# Purpose: Pre-warmed pods for Go code execution via Kubernetes pods/exec.
+#          code-executor runs: kubectl exec <pod> -- go run /dev/stdin
+#          with user code piped via stdin.
+#
+# Note on readOnlyRootFilesystem:
+#   Go's toolchain (go run) writes temporary build artifacts to /tmp and
+#   uses the Go module cache. readOnlyRootFilesystem must be FALSE for Go.
+#   The image's /tmp is writable by default (tmpfs in container runtime).
+#   All other security constraints remain fully applied.
+# =============================================================================
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: oes-runner-go
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-runner-go
+    app.kubernetes.io/component: code-runner
+    app.kubernetes.io/language: go
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  replicas: 2
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-runner-go
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: oes-runner-go
+        app.kubernetes.io/component: code-runner
+        app.kubernetes.io/language: go
+        app.kubernetes.io/part-of: oes-platform
+    spec:
+      automountServiceAccountToken: false
+
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65534
+        runAsGroup: 65534
+        seccompProfile:
+          type: RuntimeDefault
+
+      containers:
+        - name: runner
+          image: golang:1.26-alpine
+          imagePullPolicy: IfNotPresent
+
+          command: ["sleep", "infinity"]
+
+          # go run writes to /tmp — GOPATH and GOCACHE also use /tmp
+          env:
+            - name: GOPATH
+              value: "/tmp/gopath"
+            - name: GOCACHE
+              value: "/tmp/gocache"
+            - name: HOME
+              value: "/tmp"
+
+          resources:
+            requests:
+              cpu: "200m"     # Go compilation is more CPU-intensive than Python/Node
+              memory: "256Mi"
+            limits:
+              cpu: "1000m"
+              memory: "512Mi"
+
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false  # required: go run needs writable /tmp
+            capabilities:
+              drop: ["ALL"]
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: oes-runner-go-pdb
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-runner-go
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: oes-runner-go
