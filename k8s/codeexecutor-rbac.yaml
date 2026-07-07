@@ -1,0 +1,62 @@
+# =============================================================================
+# OES — code-executor RBAC
+#
+# The code-executor pod needs the following Kubernetes permissions:
+#   - pods: get, list, watch  — discover warm runner pod names and readiness
+#   - pods/exec: create       — execute code inside warm pods (pods/exec subresource)
+#   - pods: delete            — delete pods after execution completes
+#
+# All permissions are scoped to the "oes" namespace (Role, not ClusterRole).
+# =============================================================================
+
+# ── ServiceAccount ────────────────────────────────────────────────────────────
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: oes-code-executor
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-code-executor
+    app.kubernetes.io/component: code-executor
+    app.kubernetes.io/part-of: oes-platform
+automountServiceAccountToken: true
+
+---
+# ── Role ─────────────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: code-executor-role
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-code-executor
+    app.kubernetes.io/part-of: oes-platform
+rules:
+  # Watch runner pods to maintain the warm pool
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch", "delete"]
+
+  # Execute code inside runner pods via the exec subresource
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+
+---
+# ── RoleBinding ───────────────────────────────────────────────────────────────
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: code-executor-rolebinding
+  namespace: oes
+  labels:
+    app.kubernetes.io/name: oes-code-executor
+    app.kubernetes.io/part-of: oes-platform
+subjects:
+  - kind: ServiceAccount
+    name: oes-code-executor
+    namespace: oes
+roleRef:
+  kind: Role
+  name: code-executor-role
+  apiGroup: rbac.authorization.k8s.io
