@@ -1,73 +1,103 @@
 # OES — Active Context
 
 ## Current State
-The project has been fully read and understood for the first time (initial analysis session). No code changes have been made. The memento documentation set is being created as the baseline for all future sessions.
+All 8 Docker images built, pushed to DockerHub (`mskkandula/oes`), and deployed on a 4-node kind (Kubernetes in Docker) cluster. The CodeExecutor API endpoint has been tested and confirmed working for Python and Node.js.
 
-## What Was Just Done
-- Read all Dockerfiles, `docker-compose.yml`, and `nginx.conf` files for both Client and LiveStreamingServer.
-- Read all Go source files: `main.go`, `api/api.go`, all handlers, services, repositories, data-source helpers, WebSocket pool/client, running-process goroutine, config, models.
-- Read `MQServer/main.go`, `FileServer/files.go`, `IntelligenceSupport/questgen/server.py`, the `.proto` file.
-- Read the MySQL schema (`MySQL/oes.sql`), Vue router, Vuex store, `ws.js`, `Exam.vue`, WASM Go source.
-- Created all six core memento files.
+## What Was Just Done (2026-07-07)
+
+### CodeExecutor Service — New since last session
+A new `CodeExecutor/` microservice was added to the project. It:
+- Consumes code execution jobs from RabbitMQ queues (`code.execute.python`, `code.execute.go`, `code.execute.nodejs`)
+- Picks a warm runner pod from a per-language pool
+- Executes code via `kubectl exec` (Kubernetes pods/exec subresource)
+- Deletes the pod after execution (Deployment controller replaces it automatically)
+- Publishes results to Redis: `PUBLISH result:<submissionId>` + `SET result:<submissionId>` + `PUBLISH general` (WebSocket type-6)
+
+### Build & Push
+All 8 images pushed to `mskkandula/oes` on DockerHub:
+- `db`, `server`, `client`, `fileserver`, `mqserver`, `isupport`, `liveserver` (existing 7)
+- `code-executor` (new — fixed build error: `model.go` was in wrong package directory `internal/k8s/`, moved to `internal/model/`)
+
+### k8s Manifests Fixed
+1. [`k8s/kustomization.yaml`](k8s/kustomization.yaml) — Added 5 CodeExecutor resources (copied from `CodeExecutor/k8s/` to `k8s/` to satisfy kustomize security boundary)
+2. [`k8s/client-deployment.yaml`](k8s/client-deployment.yaml) — Fixed OOMKill: reduced nginx worker limits; changed topology spread to `ScheduleAnyway`
+3. [`k8s/codeexecutor-deployment.yaml`](k8s/codeexecutor-deployment.yaml) — Changed `imagePullPolicy: IfNotPresent` (was `Always`, causing stuck pod on kind)
+
+### Deployment
+- `kubectl apply -k k8s/` — all resources created in `oes` namespace
+- `kubectl port-forward svc/oes-server-nodeport 30900:9000 -n oes` — used for API access
+
+### API Testing Results
+```
+POST http://localhost:30900/r/executeCode
+```
+
+| Language | Code | Result |
+|---|---|---|
+| python | `print('Hello from OES CodeExecutor!')` | ✅ `completed`, stdout correct, durationMs=554 |
+| nodejs | `console.log('Hello from Node.js runner!')` | ✅ `completed`, stdout correct, durationMs=686 |
+| python | `x = 1/0` | ✅ `failed`, ZeroDivisionError in stderr, exitCode=1 |
+| go | `package main...` | ❌ `failed` — `go.mod file not found` (needs fix) |
+
+All Python/Node tests returned `pending: false` — confirming **Redis pub/sub fast path** (200 OK within 5s) is working end-to-end.
 
 ## Architecture Understanding Summary
 
-### Service Dependency Startup Order
+### Service Dependency Startup Order (Kubernetes)
 ```
-messageq (RabbitMQ) → healthy
-db (MySQL 8) → healthy
-cache (Redis) → healthy
-isupport (Python gRPC) → started
+oes-db (MySQL) → healthy
+oes-cache (Redis) → healthy
+oes-messageq (RabbitMQ) → healthy
                               ↓
-                        server (Go API) → starts
+                        oes-server (Go API) → starts
+                        oes-mqserver (Go+ffmpeg) → starts after messageq
+                        oes-code-executor → starts after messageq + redis
+oes-vectordb (ChromaDB) → starts (independent)
+oes-ollama (LLM) → starts (independent, slow — model download)
                               ↓
-                        client (Nginx SPA) → starts
-                        fileserver (Go) → starts (independent)
-                        mqserver (Go+ffmpeg) → starts after messageq
-                        liveserver (nginx-rtmp) → starts (independent)
+                        oes-isupport (Python gRPC RAG) → starts after ollama + vectordb
+oes-client (Nginx SPA) → starts (independent, fast)
+oes-fileserver (Go) → starts (independent)
+oes-liveserver (nginx-rtmp) → starts (independent)
+Runner pods (python/go/nodejs) → start (independent, warm pool)
 ```
 
-### Key Inter-Service Communication Paths
+### Key Inter-Service Communication Paths (Kubernetes DNS names)
 
-| Path | Protocol | Parties | Purpose |
-|---|---|---|---|
-| Browser → Nginx (port 8080) | HTTP/WS | Browser ↔ `oes_client` | All browser traffic entry point |
-| Nginx → Go API | HTTP/WS | `oes_client` → `oes_server:9000` | API calls + WebSocket upgrade |
-| Nginx → FileServer | HTTP | `oes_client` → `oes_fileserver:8887` | Serve media files (`/cdn/*`) |
-| Go API → MySQL | TCP/MySQL protocol | `oes_server` → `oes_db:3306` | All CRUD operations |
-| Go API → Redis | TCP/RESP | `oes_server` → `cache:6379` | Route cache, video cache, WS pub/sub |
-| Go API → RabbitMQ | AMQP 0-9-1 | `oes_server` → `messageq:5672` | Publish `encode` and `email` jobs |
-| Go API → Python gRPC | HTTP/2 gRPC | `oes_server` → `isupport:50051` | AI question generation |
-| MQServer → RabbitMQ | AMQP 0-9-1 | `oes_mqserver` → `messageq:5672` | Consume `encode` and `email` jobs |
-| MQServer → shared volume | filesystem | `oes_mqserver` ↔ `./media` | Read MP4, write HLS, delete original |
-| Browser → LiveServer | RTMP | Browser/OBS → `oes_liveserver:1935` | Examiner broadcasts live stream |
-| Redis Pub/Sub | RESP | `oes_server` ↔ `cache` | Fan-out WebSocket messages across potential server instances |
+| Path | Protocol | Notes |
+|---|---|---|
+| Browser → port-forward → `oes-server:9000` | HTTP | API calls |
+| `oes-server` → `oes-messageq:5672` | AMQP | Publish code jobs |
+| `oes-code-executor` → `oes-messageq:5672` | AMQP | Consume code jobs |
+| `oes-code-executor` → Kubernetes API | HTTPS | Watch/exec/delete runner pods |
+| `oes-code-executor` → `oes-cache:6379` | Redis | Publish results |
+| `oes-server` → `oes-cache:6379` | Redis | Subscribe to results (5s timeout) |
+| `oes-server` → `oes-db:3306` | MySQL | All CRUD |
 
 ## Active Decisions & Considerations
 
-### In-Memory Question Cache
-Questions uploaded via [`QuestionsUpload`](Server/api/handler/userHandler.go:99) are stored in a [`QuestionCache`](Server/api/handler/handler.go:10) (a `sync.RWMutex`-protected `map[int64][]string`). This is intentionally not persisted to Redis or MySQL — it means:
-- Questions are lost if the server restarts.
-- A future improvement would be to persist questions in MySQL or Redis.
+### CodeExecutor Model Package Fix
+The `CodeExecutor/internal/k8s/model.go` declared `package model` but lived in the `k8s` directory alongside files with `package k8s`. This caused the Go compiler to reject the build. Fix: created `CodeExecutor/internal/model/model.go` (proper location) and deleted the misplaced file.
 
-### Video Encoding Pipeline
-Video upload flow: HTTP upload → save MP4 → DB record → publish to `encode` queue → return 200 to browser. The actual HLS encoding happens async in `oes_mqserver`. The client receives success immediately but the HLS stream may not be ready for a few seconds/minutes.
+### imagePullPolicy on kind
+`imagePullPolicy: Always` forces Kubernetes to contact the registry even when the image is already in the node's containerd cache. On kind this can cause pods to be stuck `PodInitializing` for extended periods if DockerHub is slow. Fixed for `codeexecutor-deployment.yaml` by using `IfNotPresent`. Other deployments should also be updated.
 
-### WebSocket & Redis Pub/Sub Scaling
-The Redis pub/sub `general` channel is already in place to support **horizontal scaling** of the WebSocket server. Adding a second `oes_server` instance would work without code changes because all broadcast messages go through Redis. Currently only one instance runs.
+### Go Runner Module Issue
+`go run /dev/stdin` without a module context fails with `go.mod file not found`. Fix options:
+1. Add `GONOSUMDB=*` + `GOFLAGS=-mod=mod` env vars to `runner-go-deployment.yaml`  
+2. Or provide a minimal `go.mod` in the runner container's working directory via ConfigMap
 
-### WASM Binary
-The pre-built `main.wasm` in `Client/oes/public/` is served by Nginx with `application/wasm` MIME type (handled via `mime.types`). The `wasm_exec.js` Go runtime shim is included in `src/`. The WASM exports a single `countWords` function used in exam submission.
+### Two kustomization files
+- [`k8s/kustomization.yaml`](k8s/kustomization.yaml) — the **canonical** deploy root (includes all platform + CodeExecutor resources)
+- [`CodeExecutor/k8s/kustomization.yaml`](CodeExecutor/k8s/kustomization.yaml) — standalone reference (references files in `k8s/` parent, only usable from that directory)
 
-### Multi-Tenant Design
-`clientId` (UUID) is the tenant isolation key — it is set on Examiner sign-up and propagated to all students registered by that examiner. All API calls that require data isolation use `clientId` extracted from the JWT claim.
+Use `kubectl apply -k k8s/` always.
 
 ## Next Steps (If Development Continues)
-1. **Persist questions** — store question lists in MySQL/Redis instead of in-memory cache.
-2. **JWT refresh token** — implement refresh token rotation so users aren't kicked every 15 minutes.
-3. **Externalise JWT secret** — move `7yt65U745TR57lo9h%$fre#$TR43EW` to env var / Docker secret.
-4. **Implement NLP in `isupport`** — replace the echo stub with an actual sentence-BERT or T5 model for question generation.
-5. **Add HTTPS** — enable a proper TLS cert (Let's Encrypt) rather than self-signed.
-6. **Horizontal scaling test** — spin up 2× `oes_server` instances behind Nginx load balancer to validate the Redis pub/sub WebSocket fan-out.
-7. **Exam answer persistence** — currently `StudentExamMarks` table exists but no API writes to it.
-8. **Live stream viewing** — the `VideoPlay` view exists in the router but the HLS player wiring to the live server's output needs verification.
+1. **Fix Go runner** — add `GONOSUMDB=*` + `GOFLAGS=-mod=mod` to [`k8s/runner-go-deployment.yaml`](k8s/runner-go-deployment.yaml)
+2. **Change remaining `imagePullPolicy: Always`** to `IfNotPresent` in other k8s deployments for faster kind startup
+3. **Persist questions** — store in MySQL/Redis instead of in-memory cache
+4. **JWT refresh token** — implement refresh token rotation
+5. **Externalise JWT secret** — move `7yt65U745TR57lo9h%$fre#$TR43EW` to env var
+6. **Exam answer persistence** — write marks to `StudentExamMarks` table
+7. **Implement NLP in `isupport`** — RAG pipeline with langchain+ollama+chromadb (infrastructure is deployed, pipeline code needs completion)
