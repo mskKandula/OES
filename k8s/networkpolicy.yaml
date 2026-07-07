@@ -411,3 +411,149 @@ spec:
       ports:
         - protocol: TCP
           port: 8000
+
+
+---
+# ── 16. Runner pods: allow ingress ONLY from code-executor ────────────────────
+# Runner pods (python/go/nodejs) accept exec connections only from code-executor.
+# Uses component label to match all three language runner pools at once.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ingress-to-runners
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: code-runner
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-code-executor
+
+---
+# ── 17. Runner pods: zero egress (DNS only) ───────────────────────────────────
+# User code running inside runner pods CANNOT make any outbound network calls.
+# Only DNS resolution (port 53) is permitted — required for the container runtime.
+# The allow-dns-egress policy (rule 2) already covers DNS for all pods, so this
+# policy's sole purpose is to make the zero-egress intent explicit and auditable.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-runner-egress
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/component: code-runner
+  policyTypes:
+    - Egress
+  egress: []  # empty = deny all egress (DNS is permitted by allow-dns-egress above)
+
+---
+# ── 18. oes-code-executor: allow egress to RabbitMQ, Redis, K8s API ──────────
+# code-executor makes three types of outbound connections:
+#   - RabbitMQ (5672) — consume jobs
+#   - Redis (6379)    — publish results
+#   - Kubernetes API server (6443) — watch/exec/delete pods (in-cluster)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-code-executor-egress
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-code-executor
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-messageq
+      ports:
+        - protocol: TCP
+          port: 5672
+    - to:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-cache
+      ports:
+        - protocol: TCP
+          port: 6379
+    # Kubernetes API server — required for in-cluster client-go (pods watch/exec/delete)
+    # Uses ipBlock because the API server is not a pod in the oes namespace.
+    # Docker Desktop runs the API server at 10.96.0.1:443 (kubernetes.default.svc)
+    - ports:
+        - protocol: TCP
+          port: 443
+      to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8      # exclude cluster-internal pod CIDR
+              - 172.16.0.0/12   # exclude Docker bridge networks
+              - 192.168.0.0/16  # exclude local network ranges
+
+---
+# ── 19. oes-messageq: allow ingress from code-executor ───────────────────────
+# Add code-executor as an allowed consumer of RabbitMQ alongside server and mqserver.
+# This patches the existing allow-ingress-to-messageq (rule 10) by adding
+# code-executor as an additional allowed source. Since NetworkPolicy rules are
+# additive, this separate policy correctly extends access.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-code-executor-to-messageq
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-messageq
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-code-executor
+      ports:
+        - protocol: TCP
+          port: 5672
+
+---
+# ── 20. oes-cache: allow ingress from code-executor ──────────────────────────
+# Add code-executor as allowed publisher to Redis alongside oes-server.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-code-executor-to-cache
+  namespace: oes
+  labels:
+    app.kubernetes.io/part-of: oes-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: oes-cache
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/name: oes-code-executor
+      ports:
+        - protocol: TCP
+          port: 6379
