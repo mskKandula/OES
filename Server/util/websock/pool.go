@@ -3,7 +3,6 @@ package websock
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"hash/fnv"
 	"log"
 	"sync"
@@ -128,7 +127,7 @@ func (pool *Pool) Start(redis *redis.Client) {
 			poolSize := len(shard.Clients[newClient.Id])
 			shard.Unlock()
 
-			fmt.Println("Size of Connection Pool: ", poolSize)
+			log.Println("Size of Connection Pool: ", poolSize)
 
 			// Get netpoll descriptor with EventRead|EventEdgeTriggered.
 			desc := netpoll.Must(netpoll.HandleRead(newClient.Conn))
@@ -178,7 +177,7 @@ func (pool *Pool) Start(redis *redis.Client) {
 			// Close the connection
 			newClient.Conn.Close()
 
-			fmt.Println("Size of Connection Pool: ", poolSize)
+			log.Println("Size of Connection Pool: ", poolSize)
 
 		case message := <-pool.Broadcast:
 			// Publish the message on "general" channel
@@ -282,7 +281,7 @@ func (pool *Pool) runShardWorker(idx uint32, tasks <-chan shardTask) {
 		case 1, 3:
 			for _, client := range shard.Clients[msg.Id] {
 				if client.Details.Role == "Student" {
-					fmt.Println("Sending message to all students in Pool")
+					log.Println("Sending message to all students in Pool")
 					client.Conn.SetWriteDeadline(time.Now().Add(WriteDeadline))
 					if err := wsutil.WriteServerText(client.Conn, payloadData); err != nil {
 						log.Println("shard worker write error:", err)
@@ -293,7 +292,7 @@ func (pool *Pool) runShardWorker(idx uint32, tasks <-chan shardTask) {
 
 		case 4:
 			if client, ok := shard.Clients[msg.Id][msg.To]; ok {
-				fmt.Println("Sending message to specific client in Pool")
+				log.Println("Sending message to specific client in Pool")
 				client.Conn.SetWriteDeadline(time.Now().Add(WriteDeadline))
 				if err := wsutil.WriteServerText(client.Conn, payloadData); err != nil {
 					log.Println("shard worker write error:", err)
