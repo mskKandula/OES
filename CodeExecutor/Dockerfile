@@ -10,26 +10,30 @@ FROM golang:1.26-alpine AS builder
 WORKDIR /build
 
 # Copy dependency manifests first for layer caching
-COPY go.mod go.sum ./
+COPY go.mod go.sum .
 
 # Download dependencies
 RUN go mod download
 
 # Copy source and build
 COPY . .
+
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
     -ldflags="-s -w" \
-    -o code-executor \
-    ./main.go
+    -o code-executor .
 
 # ── Stage 2: Runtime ─────────────────────────────────────────────────────────
 FROM alpine:3.23
 
-WORKDIR /app
-COPY --from=builder /build/code-executor .
+# Create non-root user and group
+RUN addgroup -S oesgroup && adduser -S oesuser -G oesgroup
 
-# Use the existing nobody user (UID 65534) — already present in alpine
-USER nobody
+WORKDIR /app
+
+COPY --from=builder --chown=oesuser:oesgroup /build/code-executor .
+
+# Switch to non-root user
+USER oesuser
 
 # code-executor has no listening port — it only makes outbound connections
 # (RabbitMQ consumer, Redis publisher, Kubernetes API client)
