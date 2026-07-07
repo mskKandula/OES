@@ -2,19 +2,19 @@
 FROM golang:1.26-alpine AS builder
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/OES/server
+WORKDIR /build
 
 # Copy Go Application Dependencies
-COPY ./Server/go.mod ./Server/go.sum ./
+COPY go.mod go.sum .
 
 # Download dependencies 
 RUN go mod download
 
 # Copy code files
-COPY ./Server/ .
+COPY . .
 
 # Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o main .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o server .
 
 ########### Stage 2 ###########
 
@@ -25,15 +25,9 @@ FROM alpine:3.23
 RUN addgroup -S oesgroup && adduser -S oesuser -G oesgroup
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/OES/server
+WORKDIR /app
 
-COPY --from=builder /app/OES/server/config.json .
-
-# Copy built binary application from 'builder' image
-COPY --from=builder /app/OES/server/main .
-
-# Own the workdir by the non-root user
-RUN chown -R oesuser:oesgroup /app/OES/server
+COPY --from=builder --chown=oesuser:oesgroup /build/config.json /build/server .
 
 # Switch to non-root user
 USER oesuser
@@ -42,4 +36,4 @@ USER oesuser
 EXPOSE 9000
 
 # Run the binary program produced by `go install`
-CMD ["./main"]
+CMD ["./server"]
