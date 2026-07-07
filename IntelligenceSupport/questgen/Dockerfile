@@ -1,27 +1,25 @@
 # Stage 1 — builder
-FROM python:3.11-slim AS builder
+FROM python:3.14-slim AS builder
 
 # Install build dependencies needed by chromadb / sentence-transformers
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    gcc \
-    g++ \
     cmake \
     git \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-WORKDIR /app/OES/IntelligenceSupport
+WORKDIR /build
 
 # Install Python dependencies into a target directory for clean copy
 COPY ./IntelligenceSupport/questgen/requirements.txt .
-RUN pip install --no-cache-dir --target=/app/OES/IntelligenceSupport/dependencies -r requirements.txt
+RUN pip install --no-cache-dir --target=/build/dependencies -r requirements.txt
 
 # Copy application source
 COPY ./IntelligenceSupport/questgen/ .
 
 # Stage 2 — runtime
-FROM python:3.11-slim
+FROM python:3.14-slim
 
 # Install only runtime shared libraries
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -32,14 +30,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Create non-root user and group
 RUN groupadd -r oesgroup && useradd -r -g oesgroup oesuser
 
-WORKDIR /app/OES/IntelligenceSupport
+WORKDIR /app
 
-COPY --from=builder /app/OES/IntelligenceSupport/ .
-
-# Own the workdir by the non-root user
-RUN chown -R oesuser:oesgroup /app/OES/IntelligenceSupport
-
-ENV PYTHONPATH="${PYTHONPATH}:/app/OES/IntelligenceSupport/dependencies"
+COPY --from=builder --chown=oesuser:oesgroup /build .
 
 # Switch to non-root user
 USER oesuser
