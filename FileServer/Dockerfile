@@ -1,17 +1,17 @@
-FROM golang:1.26-alpine AS builder1
+FROM golang:1.26-alpine AS builder
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/OES/fileserver
+WORKDIR /build
 
 # We want to populate the module cache based on the go.{mod} files.
-COPY ./FileServer/go.mod .
+COPY go.mod go.sum .
 
 RUN go mod download
 
-COPY ./FileServer/ .
+COPY . .
 
 # Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o files .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o file-server .
 
 
 ########### Stage 2 ###########
@@ -23,13 +23,10 @@ FROM alpine:3.23
 RUN addgroup -S oesgroup && adduser -S oesuser -G oesgroup
 
 # Set the Current Working Directory inside the container
-WORKDIR /app/OES/fileserver
+WORKDIR /app
 
 # Copy built binary application from 'builder' image
-COPY --from=builder1 /app/OES/fileserver/files .
-
-# Own the workdir by the non-root user
-RUN chown -R oesuser:oesgroup /app/OES/fileserver
+COPY --from=builder --chown=oesuser:oesgroup /build/file-server .
 
 # Switch to non-root user
 USER oesuser
@@ -38,4 +35,4 @@ USER oesuser
 EXPOSE 8887
 
 # Run the binary program produced by `go install`
-CMD ["./files"]
+CMD ["./file-server"]
