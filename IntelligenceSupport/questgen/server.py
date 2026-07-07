@@ -86,22 +86,27 @@ class QuestGenerator(QuestGenServiceServicer):
             chunk_overlap=50,
             separators=["\n\n", "\n", ".", " "],
         )
+        self._store_cache: dict[str, Chroma] = {}
         logger.info("QuestGenerator RAG service ready.")
 
+    
     def _get_client_store(self, client_id: str) -> Chroma:
-        """Return the ChromaDB vector store for the given client.
-        Collection name: oes_knowledge_{client_id}
-        Both examiner uploads and student queries use this same collection,
-        isolated per tenant by collection name.
-        """
+    """Return (and cache) the ChromaDB vector store for the given client.
+    Collection name: oes_knowledge_{client_id}
+    The first call per client_id creates the Chroma wrapper and caches it.
+    Subsequent calls return the cached instance — no extra network round-trip
+    to ChromaDB's get_or_create_collection.
+    """
+    if client_id not in self._store_cache:
         collection_name = f"{COLLECTION_PREFIX}_{client_id}" if client_id else f"{COLLECTION_PREFIX}_default"
-        logger.info("Using collection: %s", collection_name)
-        return Chroma(
+        logger.info("Creating Chroma store for collection: %s", collection_name)
+        self._store_cache[client_id] = Chroma(
             client=self.chroma_client,
             collection_name=collection_name,
             embedding_function=self.embeddings,
             collection_metadata={"hnsw:space": "cosine"},
         )
+    return self._store_cache[client_id]
 
     # ── RPC 1: Examiner — Generate exam questions from a paragraph ────────────
     def QuestGen(self, request, context):
