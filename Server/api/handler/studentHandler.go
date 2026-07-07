@@ -99,7 +99,7 @@ func (h *Handler) DownloadStudents(c *gin.Context) {
 	ReportName := "All Students Details" + ".xlsx"
 
 	c.Writer.Header().Add("Content-type", "application/octet-stream")
-	c.Writer.Header().Set("Content-Disposition", "attachment; filename="+ReportName+".xlsx")
+	c.Writer.Header().Set("Content-Disposition", "attachment; filename="+ReportName)
 	c.Writer.Header().Set("Content-Transfer-Encoding", "binary")
 	file.Write(c.Writer)
 }
