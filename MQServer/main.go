@@ -124,7 +124,7 @@ func main() {
 		encodeMsgs, err := ch.Consume(
 			encodeQ.Name, // queue
 			"",           // consumer tag
-			true,         // auto-ack
+			false,        // auto-ack
 			false,        // exclusive
 			false,        // no-local
 			false,        // no-wait
@@ -207,6 +207,8 @@ func main() {
 	}
 }
 
+var welcomeEmailTmpl = template.Must(template.New("reg").Parse(registrationEmailTmpl))
+
 // SendWelcomeEmail unmarshals an emailPayload from body, renders the HTML
 // template, and dispatches via Gmail SMTP.
 // SMTP credentials are read from SMTP_EMAIL and SMTP_PASSWORD env vars.
@@ -217,14 +219,8 @@ func SendWelcomeEmail(body []byte) {
 		return
 	}
 
-	tmpl, err := template.New("reg").Parse(registrationEmailTmpl)
-	if err != nil {
-		log.Printf("[email] failed to parse template: %v", err)
-		return
-	}
-
 	var buf bytes.Buffer
-	if err = tmpl.Execute(&buf, p); err != nil {
+	if err := welcomeEmailTmpl.Execute(&buf, p); err != nil {
 		log.Printf("[email] failed to execute template: %v", err)
 		return
 	}
