@@ -1,41 +1,39 @@
 # Stage 1 as builder
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
-WORKDIR /app/OES/client
+WORKDIR /build
 
 # Copy manifests first to leverage layer cache
-COPY ./Client/oes/package.json ./Client/oes/package-lock.json ./
+COPY ./oes/package*.json .
 RUN npm ci
 
 # Copy rest of the files
-COPY ./Client/oes/ .
+COPY ./oes .
 RUN npm run build
 
 ########## Stage 2 ##########
-FROM nginx:stable-alpine AS production-build
+FROM nginx:stable-alpine
 
-RUN apk add --no-cache openssl && \
+RUN apk add --no-cache openssl && addgroup -S oesgroup && adduser -S oesuser -G oesgroup && \
+    mkdir -p /etc/ssl/private && \
     openssl req -x509 -nodes -days 365 \
     -subj  "/C=CA/ST=QC/O=Company Inc/CN=example.com" \
     -newkey rsa:2048 \
     -keyout /etc/ssl/private/nginx-selfsigned.key \
     -out /etc/ssl/certs/nginx-selfsigned.crt && \
-    rm /etc/nginx/nginx.conf /etc/nginx/conf.d/default.conf
+    rm -f /etc/nginx/conf.d/default.conf
 
-# Create non-root user for nginx worker processes
-# nginx master must run as root to bind port 80, but workers run as nginx user
-RUN addgroup -S oesgroup && adduser -S oesuser -G oesgroup
-
-WORKDIR /usr/share/nginx/html
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Copy from the stage 1
-COPY --from=builder /app/OES/client/dist .
+COPY --from=builder /build/dist /usr/share/nginx/html
 
-# Own static files by non-root user
-RUN chown -R oesuser:oesgroup /usr/share/nginx/html
-
-# Copy configuration
-COPY ./Client/nginx.conf /etc/nginx/
+RUN chown -R oesuser:oesgroup \
+    /usr/share/nginx/html \
+    /var/cache/nginx \
+    /var/log/nginx \
+    /etc/nginx
 
 EXPOSE 80
 
