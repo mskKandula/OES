@@ -53,7 +53,7 @@ spec:
           # Replace with your registry image for production.
           # For local docker-desktop: load with ctr -n k8s.io images import
           image: mskkandula/oes:liveserver
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
 
           ports:
             - name: rtmp
@@ -82,8 +82,8 @@ spec:
 
           resources:
             requests:
-              cpu: "200m"
-              memory: "128Mi"
+              cpu: "100m"    # nginx-rtmp is near-idle when no stream is active
+              memory: "64Mi" # idle nginx uses ~20-40MB
             limits:
               cpu: "2000m"   # ffmpeg transcoding inside nginx-rtmp exec_push
               memory: "1Gi"
