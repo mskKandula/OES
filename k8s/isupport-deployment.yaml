@@ -84,7 +84,7 @@ spec:
       containers:
         - name: oes-isupport
           image: mskkandula/oes:isupport
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
 
           ports:
             - name: grpc
@@ -113,7 +113,7 @@ spec:
             # ── Model selection ────────────────────────────────────────────────
             # Must match the models pulled by oes-ollama initContainer.
             - name: LLM_MODEL
-              value: "llama3.2:3b"
+              value: "llama3.2:1b"
             - name: EMBED_MODEL
               value: "nomic-embed-text"
 
@@ -140,15 +140,15 @@ spec:
             periodSeconds: 5
             failureThreshold: 30  # up to 2.5 min for model connection on cold start
 
-          # RAG service is CPU-bound when Ollama is on a separate pod.
-          # Adjust limits when real GPU inference is wired in.
+          # isupport is a thin gRPC wrapper — all heavy work (embedding + LLM)
+          # is offloaded to oes-ollama and oes-vectordb pods.
           resources:
             requests:
-              cpu: "200m"
-              memory: "256Mi"
+              cpu: "100m"
+              memory: "128Mi"
             limits:
-              cpu: "1000m"
-              memory: "1Gi"
+              cpu: "500m"
+              memory: "512Mi"
 
           securityContext:
             allowPrivilegeEscalation: false
