@@ -144,7 +144,7 @@ spec:
   storageClassName: hostpath
   resources:
     requests:
-      storage: 10Gi  # llama3.2:3b ~2GB + nomic-embed-text ~274MB + headroom
+      storage: 5Gi  # llama3.2:1b ~850MB + nomic-embed-text ~274MB + headroom
 
 ---
 # ── ChromaDB vector store data ────────────────────────────────────────────────
