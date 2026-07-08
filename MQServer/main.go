@@ -110,6 +110,20 @@ func main() {
 		ch, err := conn.Channel()
 		failOnError(err, "Failed to open a channel")
 
+		// ── Prefetch limit ───────────────────────────────────────────────────
+		// Without Qos, RabbitMQ pushes ALL pending messages into the Go channel
+		// buffer at once. With Qos(workerCount), the broker delivers at most
+		// workerCount unacknowledged messages at a time — matching the semaphore
+		// capacity so we never hold more work-in-memory than we can execute
+		// concurrently. This is especially important for the encode queue where
+		// each job can be several hundred MB of MP4.
+		//
+		//   global=false means the limit applies per-consumer (per-channel here),
+		//   which is what we want since encode and email share the same channel.
+		if err := ch.Qos(workerCount, 0, false); err != nil {
+			failOnError(err, "Failed to set channel QoS prefetch")
+		}
+
 		// ── Video encoding queue ─────────────────────────────────────────────
 		encodeQ, err := ch.QueueDeclare(
 			"encode", // name
