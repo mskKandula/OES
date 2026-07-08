@@ -41,7 +41,7 @@ spec:
       containers:
         - name: redis
           image: redis:8.0-alpine
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
           command:
             - redis-server
             - --bind
@@ -58,10 +58,8 @@ spec:
             - allkeys-lru
             - --save
             - "900 1"
-            - --save
-            - "300 10"
-            - --save
-            - "60 10000"
+            # Removed aggressive 300s and 60s RDB save rules to reduce disk I/O.
+            # AOF (appendonly yes) already provides crash recovery.
 
           ports:
             - name: redis
@@ -102,7 +100,7 @@ spec:
               memory: "128Mi"
             limits:
               cpu: "500m"
-              memory: "512Mi"
+              memory: "320Mi"  # Redis self-caps at 256mb via --maxmemory
 
           securityContext:
             allowPrivilegeEscalation: false
