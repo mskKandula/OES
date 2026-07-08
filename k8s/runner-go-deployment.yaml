@@ -63,10 +63,10 @@ spec:
           resources:
             requests:
               cpu: "200m"     # Go compilation is more CPU-intensive than Python/Node
-              memory: "256Mi"
+              memory: "128Mi"
             limits:
-              cpu: "1000m"
-              memory: "512Mi"
+              cpu: "500m"
+              memory: "256Mi"
 
           securityContext:
             allowPrivilegeEscalation: false
