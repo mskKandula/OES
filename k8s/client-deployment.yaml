@@ -147,7 +147,7 @@ metadata:
     app.kubernetes.io/component: frontend
     app.kubernetes.io/part-of: oes-platform
 spec:
-  replicas: 2
+  replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
@@ -283,8 +283,8 @@ spec:
     apiVersion: apps/v1
     kind: Deployment
     name: oes-client
-  minReplicas: 2
-  maxReplicas: 8
+  minReplicas: 1
+  maxReplicas: 4
   metrics:
     - type: Resource
       resource:
