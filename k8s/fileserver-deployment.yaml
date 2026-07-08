@@ -47,7 +47,7 @@ spec:
           # Replace with your registry image for production.
           # For local docker-desktop: load with ctr -n k8s.io images import
           image: mskkandula/oes:fileserver
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
 
           ports:
             - name: http
