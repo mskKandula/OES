@@ -63,7 +63,7 @@ spec:
                 echo "Waiting for Ollama to start..."; sleep 3;
               done
               echo "Ollama started. Pulling models..."
-              ollama pull llama3.2:3b
+              ollama pull llama3.2:1b
               ollama pull nomic-embed-text
               echo "Models pulled successfully."
               kill $OLLAMA_PID
@@ -76,7 +76,7 @@ spec:
               memory: "1Gi"
             limits:
               cpu: "4000m"
-              memory: "8Gi"
+              memory: "4Gi"
 
       containers:
         - name: oes-ollama
@@ -87,6 +87,15 @@ spec:
             - name: http
               containerPort: 11434
               protocol: TCP
+
+          env:
+            # Unload model from RAM after 5 min of inactivity to free memory.
+            # On next request Ollama reloads in ~10-20s (model weights on PVC).
+            - name: OLLAMA_KEEP_ALIVE
+              value: "5m"
+            # Only keep 1 model loaded in RAM at a time (llm + embed share slot).
+            - name: OLLAMA_MAX_LOADED_MODELS
+              value: "1"
 
           volumeMounts:
             - name: ollama-data
@@ -116,14 +125,15 @@ spec:
             periodSeconds: 10
             failureThreshold: 60  # up to 10 min for model loading on cold start
 
-          # CPU-only inference — llama3.2:3b requires ~4-6GB RAM on CPU
+          # CPU-only inference — llama3.2:1b requires ~1.5-2GB RAM on CPU.
+          # Idle RAM drops to ~300Mi when OLLAMA_KEEP_ALIVE unloads the model.
           resources:
             requests:
               cpu: "500m"
-              memory: "4Gi"
+              memory: "2Gi"
             limits:
               cpu: "4000m"
-              memory: "8Gi"
+              memory: "4Gi"
 
           securityContext:
             allowPrivilegeEscalation: false
