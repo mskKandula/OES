@@ -82,7 +82,7 @@ spec:
       containers:
         - name: oes-server
           image: mskkandula/oes:server
-          imagePullPolicy: Always
+          imagePullPolicy: IfNotPresent
 
           ports:
             - name: http
