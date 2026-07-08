@@ -95,13 +95,15 @@ spec:
             periodSeconds: 5
             failureThreshold: 20
 
+          # ChromaDB with a small exam corpus (~hundreds of chunks) uses
+          # 150-300 MB in practice. 2Gi limit was excessive for this workload.
           resources:
             requests:
-              cpu: "200m"
-              memory: "256Mi"
+              cpu: "100m"
+              memory: "128Mi"
             limits:
-              cpu: "1000m"
-              memory: "2Gi"
+              cpu: "500m"
+              memory: "512Mi"
 
           securityContext:
             allowPrivilegeEscalation: false
