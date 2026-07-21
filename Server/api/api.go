@@ -11,13 +11,14 @@ import (
 	"github.com/mskKandula/oes/api/handler"
 	"github.com/mskKandula/oes/api/middleware"
 	"github.com/mskKandula/oes/api/model"
-	"github.com/mskKandula/oes/api/pkg/questgen/pb"
+	"github.com/mskKandula/oes/api/pkg/intelligence/pb"
 	"github.com/mskKandula/oes/api/repository"
 	"github.com/mskKandula/oes/api/service"
 	ds "github.com/mskKandula/oes/dataSources"
 	"github.com/mskKandula/oes/util/runningProcess"
 	"github.com/mskKandula/oes/util/websock"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var (
@@ -31,14 +32,12 @@ func initSources() (*websock.Pool, *handler.Handler) {
 		log.Fatalf("Connection Failed to Open:%v", err.Error())
 	}
 
-	client, err := InitGrpcServiceClient()
+	intelligenceClient, err := InitGrpcServiceClient()
 	if err != nil {
 		log.Fatalf("Connection Failed to Open:%v", err.Error())
 	}
 
-	h := handler.NewHandler(getUserService(ds, client), getStudentService(ds), getCommonService(ds))
-
-	// go runningProcess.HlsVideoConversion(handler.BufChan)
+	h := handler.NewHandler(getUserService(ds), getStudentService(ds), getCommonService(ds, intelligenceClient))
 
 	pool := websock.NewPool()
 	go pool.Start(ds.Redis)
@@ -85,6 +84,7 @@ func InitRouter() *gin.Engine {
 		common.GET("/getRoutes", h.GetAllRoutes)
 		common.GET("/getVideos", h.GetAllVideos)
 		common.GET("/logOut", h.Logout)
+		common.POST("/query", h.Query)
 	}
 
 	user := r.Group("/r").Use(middleware.Auth("Examiner"))
@@ -92,7 +92,6 @@ func InitRouter() *gin.Engine {
 		user.POST("/multipleStudentsRegistration", h.StudentsRegister)
 		user.POST("/uploadQuestionFile", h.QuestionsUpload)
 		user.POST("/uploadVideoContent", h.VideoUpload)
-		user.POST("/questionGeneration", h.QuestionGen)
 
 		user.GET("/getStudents", h.GetStudents)
 		user.GET("/downloadStudents", h.DownloadStudents)
@@ -101,7 +100,6 @@ func InitRouter() *gin.Engine {
 	student := r.Group("/r").Use(middleware.Auth("Student"))
 	{
 		student.POST("/uploadExamProof", h.UploadExamProof)
-		student.POST("/askQuestion", h.AskQuestion)
 		student.POST("/executeCode", h.ExecuteCode)
 
 		student.GET("/getQuestions", h.GetQuestions)
@@ -110,14 +108,13 @@ func InitRouter() *gin.Engine {
 	return r
 }
 
-func getUserService(ds *ds.DataSources, client pb.QuestGenServiceClient) model.UserService {
+func getUserService(ds *ds.DataSources) model.UserService {
 
 	userMySQLRepository := repository.NewUserMySQLRepository(&repository.RepositoryConfig{
 		MySQLDB: ds.MySQLDB, Redis: ds.Redis})
 
 	userService := service.NewUserService(&service.UserServiceConfig{
 		UserRepository: userMySQLRepository,
-		QuestgenClient: client,
 		Publisher:      ds.Publisher,
 	})
 
@@ -138,25 +135,26 @@ func getStudentService(ds *ds.DataSources) model.StudentService {
 	return studentService
 }
 
-func getCommonService(ds *ds.DataSources) model.CommonService {
+func getCommonService(ds *ds.DataSources, intelligenceClient pb.IntelligenceServiceClient) model.CommonService {
 
 	commonMySQLRepository := repository.NewCommonMySQLRepository(&repository.RepositoryConfig{
 		MySQLDB: ds.MySQLDB, Redis: ds.Redis})
 
 	commonService := service.NewCommonService(&service.CommonServiceConfig{
-		CommonRepository: commonMySQLRepository,
+		CommonRepository:   commonMySQLRepository,
+		IntelligenceClient: intelligenceClient,
 	})
 
 	return commonService
 }
 
-func InitGrpcServiceClient() (pb.QuestGenServiceClient, error) {
-	// using WithInsecure() because no SSL running
-	conn, err := grpc.Dial(config.DatabaseConfig.GRPCDSN, grpc.WithInsecure())
-	// defer conn.Close()
+// InitGrpcServiceClient creates a client connection to the Intelligence Agent gRPC service.
+// Address is read from config (GRPCDSN — points to oes-isupport:50051).
+func InitGrpcServiceClient() (pb.IntelligenceServiceClient, error) {
+	// using insecure.NewCredentials() because no SSL running inside the private cluster network
+	conn, err := grpc.NewClient(config.DatabaseConfig.GRPCDSN, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
-
-	return pb.NewQuestGenServiceClient(conn), nil
+	return pb.NewIntelligenceServiceClient(conn), nil
 }

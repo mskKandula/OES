@@ -3,10 +3,8 @@ FROM golang:1.26-alpine AS builder
 # Set the Current Working Directory inside the container
 WORKDIR /build
 
-# We want to populate the module cache based on the go.{mod} files.
-COPY go.mod go.sum .
-
-RUN go mod download
+# No external dependencies — stdlib only, so no go.sum exists.
+COPY go.mod .
 
 COPY . .
 

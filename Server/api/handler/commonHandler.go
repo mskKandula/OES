@@ -38,12 +38,12 @@ func (h *Handler) Login(c *gin.Context) {
 	}
 
 	http.SetCookie(c.Writer, &http.Cookie{
-		Name:    "token",
-		Value:   tokenString,
-		Path:    "/",
-		Expires: expiriesIn,
+		Name:     "token",
+		Value:    tokenString,
+		Path:     "/",
+		Expires:  expiriesIn,
 		HttpOnly: true,
-		Secure:  false, // set true when behind HTTPS/production
+		Secure:   false, // set true when behind HTTPS/production
 		SameSite: http.SameSiteLaxMode,
 	})
 
@@ -84,9 +84,6 @@ func (h *Handler) ServeWs(pool *websock.Pool, w http.ResponseWriter, r *http.Req
 	decoder := schema.NewDecoder()
 
 	decoder.Decode(&details, r.URL.Query())
-	// if err != nil {
-	//     log.Fprintf(w, "%+v\n", err)
-	// }
 
 	conn, err := websock.Upgrade(w, r)
 	if err != nil {
@@ -98,8 +95,8 @@ func (h *Handler) ServeWs(pool *websock.Pool, w http.ResponseWriter, r *http.Req
 		Pool:    pool,
 		Details: &details,
 	}
-    client.IsAlive.Store(true)
-	
+	client.IsAlive.Store(true)
+
 	pool.Register <- client
 }
 
@@ -117,4 +114,30 @@ func (h *Handler) CheckStatus(c *gin.Context) {
 	currentTime := time.Now()
 	selfStatus := model.SelfStatus{StatusMessage: "runnning", ServerTime: currentTime}
 	c.JSON(http.StatusOK, selfStatus)
+}
+
+// Query handles natural-language intelligence queries for any authenticated user.
+// POST /r/query
+// Body: { "query": "...", "contextId": "optional-topic" }
+// The JWT userType is forwarded as role so the agent can tailor its behaviour.
+// Response: { "answer": "...", "toolUsed": "..." }
+func (h *Handler) Query(c *gin.Context) {
+	req := model.QueryRequest{}
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	userType := c.GetString("userType")
+	clientId := c.GetString("clientId")
+	userId := c.GetString("userId")
+	ctx := c.Request.Context()
+
+	answer, toolUsed, err := h.CommonService.Query(ctx, req.Query, userType, clientId, userId, req.ContextId)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"answer": answer, "toolUsed": toolUsed})
 }

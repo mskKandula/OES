@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package intelligence;
+
+option go_package = "./pkg/intelligence/pb";
+
+// ── Unified Intelligence Request ─────────────────────────────────────────────
+// Single entry point for all roles: Examiner, Student, Admin (future).
+// The agent uses role + context to decide which MCP tools to invoke.
+
+message IntelligenceRequest {
+    string query      = 1; // Natural language query from any user
+    string role       = 2; // "Examiner" | "Student" — maps to JWT userType
+    string client_id  = 3; // Tenant scope — isolates data per examiner
+    string user_id    = 4; // Authenticated user ID (for audit / context)
+    string context_id = 5; // Optional topic/subject tag (e.g. "biology")
+}
+
+message IntelligenceResponse {
+    string answer    = 1; // Final answer from the agent
+    string tool_used = 2; // Which MCP tool(s) the agent invoked
+    bool   success   = 3; // false if agent encountered an unrecoverable error
+}
+
+// ── Service ──────────────────────────────────────────────────────────────────
+
+service IntelligenceService {
+    // Unified query endpoint — any authenticated user calls this.
+    // The agent reads role, client_id, context_id to decide tool and scope.
+    rpc Ask(IntelligenceRequest) returns (IntelligenceResponse) {};
+}
+
+// ── Code-generation commands ─────────────────────────────────────────────────
+// Python stubs (run from proto/ folder):
+//   python -m grpc_tools.protoc --proto_path=. ./intelligence.proto \
+//     --python_out=../pb --grpc_python_out=../pb
+//
+// Go stubs (run from Server/ folder):
+//   protoc --proto_path=../IntelligenceSupport/agent/proto \
+//     --go_out=. --go_opt=module=github.com/mskKandula/oes \
+//     --go-grpc_out=. --go-grpc_opt=module=github.com/mskKandula/oes \
+//     intelligence.proto

@@ -166,7 +166,7 @@ services:
       - default
     restart: always
     # Pull llama3.2:3b (LLM) and nomic-embed-text (embeddings) on first startup
-    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 10 && ollama pull llama3.2:3b && ollama pull nomic-embed-text && wait"]
+    entrypoint: ["/bin/sh", "-c", "ollama serve & sleep 10 && ollama pull llama3.2:1b && ollama pull nomic-embed-text && wait"]
 
   isupport:
     container_name: "oes_isupport"
@@ -185,8 +185,9 @@ services:
       - OLLAMA_BASE_URL=http://ollama:11434
       - CHROMA_HOST=vectordb
       - CHROMA_PORT=8000
-      - LLM_MODEL=llama3.2:3b
+      - LLM_MODEL=llama3.2:1b
       - EMBED_MODEL=nomic-embed-text
+      - PYTHONPATH=/app/dependencies
 
   vectordb:
     image: chromadb/chroma:latest
@@ -201,6 +202,22 @@ services:
     environment:
       - IS_PERSISTENT=TRUE
       - ALLOW_RESET=FALSE
+
+  codeexecutor:
+    container_name: "oes_codeexecutor"
+    build:
+      context: ./CodeExecutor
+      dockerfile: Dockerfile
+    networks:
+      - default
+    restart: always
+    depends_on:
+      - messageq
+      - cache
+    environment:
+      - RABBITMQ_DSN=amqp://rabbitmq:rabbitmq@messageq/
+      - REDIS_DSN=redis://cache:6379/0
+      - LANGUAGES=python,go,nodejs
 
   liveserver:
     container_name: "oes_liveserver"

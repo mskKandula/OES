@@ -7,26 +7,22 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/mskKandula/oes/api/model"
-	"github.com/mskKandula/oes/api/pkg/questgen/pb"
 )
 
 type userService struct {
 	UserRepository model.UserRepository
-	QuestgenClient pb.QuestGenServiceClient
 	Publisher      model.Publisher
 }
 
 // UserServiceConfig holds repositories and dependencies injected into this service layer.
 type UserServiceConfig struct {
 	UserRepository model.UserRepository
-	QuestgenClient pb.QuestGenServiceClient
 	Publisher      model.Publisher
 }
 
 func NewUserService(usc *UserServiceConfig) model.UserService {
 	return &userService{
 		UserRepository: usc.UserRepository,
-		QuestgenClient: usc.QuestgenClient,
 		Publisher:      usc.Publisher,
 	}
 }
@@ -58,32 +54,6 @@ func (us *userService) CreateVideoFile(ctx context.Context, fileName, url, image
 	}
 
 	return nil
-}
-
-func (us *userService) GenQuestion(ctx context.Context, requestData, clientId, contextId string) (string, error) {
-	r, err := us.QuestgenClient.QuestGen(ctx, &pb.QuestGenRequest{
-		Request:   requestData,
-		ClientId:  clientId,
-		ContextId: contextId,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return r.GetResponse(), nil
-}
-
-func (us *userService) AskQuestion(ctx context.Context, question, contextId, clientId string) (string, error) {
-	r, err := us.QuestgenClient.AskQuestion(ctx, &pb.AskQuestionRequest{
-		Question:  question,
-		ContextId: contextId,
-		ClientId:  clientId,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	return r.GetAnswer(), nil
 }
 
 func (us *userService) CreateExam(ctx context.Context, clientId, examName, examType string) (int64, error) {

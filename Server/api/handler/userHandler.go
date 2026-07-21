@@ -169,21 +169,3 @@ func (h *Handler) QuestionsUpload(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"questions": fileTextLines, "examId": examId})
 }
-
-func (h *Handler) QuestionGen(c *gin.Context) {
-	questionRequest := model.QuestionRequest{}
-	if err := c.ShouldBindJSON(&questionRequest); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	clientId := c.GetString("clientId")
-	ctx := c.Request.Context()
-	resp, err := h.UserService.GenQuestion(ctx, questionRequest.Paragraph, clientId, questionRequest.ContextId)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"Questions": resp})
-}
